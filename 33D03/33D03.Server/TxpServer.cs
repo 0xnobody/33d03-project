@@ -102,11 +102,6 @@ namespace _33D03.Server
             destination.OutgoingSequenceNumber = 0;
         }
 
-        public int GetConnectedClientsCount()
-    {
-        return converstaions.Count;
-    }
-
         public void ServerBroadcast(byte[] data)
         {
             foreach (var kvp in converstaions)
