@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 public class ServerPIP{
 
     public Random random = new Random();
-    
+
     private int result_Sat_Consensus = 0;
     private int result_Unsat_Consensus = 0;
     private int total_client = 0;
