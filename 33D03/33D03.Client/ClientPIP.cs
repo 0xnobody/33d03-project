@@ -12,9 +12,9 @@ using NLog.LayoutRenderers;
 namespace _33d03.ClientPIP
 {
 
-    public class PIP{
+    public class ClientPIP{
 
-        private string senddata = "33D03_client_initiate_vote"; //inital string converetd to bytes, check for successful conversion & if data in server reads, branch to server vote init handler
+        private string senddata = "client_initiate_vote"; //inital string converetd to bytes, check for successful conversion & if data in server reads, branch to server vote init handler
         public void Init_vote(TxpClient client){
             byte[] data = StrToByte(senddata);      //converts data string to bytes, using UTF8. Serialization needs to be completed.
             client.Send(data);                      //assuming ACK was implemented already in server send and client send TXP
@@ -64,38 +64,6 @@ namespace _33d03.ClientPIP
         }
 
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 }

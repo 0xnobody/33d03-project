@@ -102,6 +102,30 @@ namespace _33D03.Server
             destination.OutgoingSequenceNumber = 0;
         }
 
+        public int GetConnectedClientsCount()
+    {
+        return converstaions.Count;
+    }
+
+        public void ServerBroadcast(byte[] data)
+        {
+            foreach (var kvp in converstaions)
+            {
+            TxpClientState clientState = kvp.Value;
+                try
+                {
+                    server.Send(data, data.Length, clientState.LastEndPoint);
+                    logger.Info($"Broadcasted message to {clientState.LastEndPoint}");
+                }
+                catch (Exception ex)
+                {
+                    logger.Error(ex, $"Failed to broadcast message to {clientState.LastEndPoint}");
+                }
+            }
+        }
+
+
+
         private void HandleIncomingClientPacket(TxpClientState converstaion, Shared.Txp.Header header, byte[] receivedData)
         {
             switch (header.type)

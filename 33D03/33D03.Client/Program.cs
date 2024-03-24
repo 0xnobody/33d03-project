@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using static _33D03.PacketDeserializer;
+using static _33D03.Shared.Serialization;
 
 namespace _33D03.Client
 {
