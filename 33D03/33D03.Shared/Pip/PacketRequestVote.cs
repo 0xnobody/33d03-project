@@ -15,6 +15,14 @@ namespace _33D03.Shared.Pip
         uint questionLength;
         // Question - questionLength UTF-8 bytes
 
+
+        public PacketRequestVote(Header constructheader, Guid constructvoteGuid, uint constructquestionLength)
+        {
+        header = constructheader;
+        voteGuid = constructvoteGuid;
+        questionLength = constructquestionLength;
+        }
+        
         public byte[] ToBytes()
         {
             return Serialization.StructureToByteArray(this);

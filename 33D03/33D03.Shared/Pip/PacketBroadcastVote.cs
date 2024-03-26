@@ -39,7 +39,7 @@ namespace _33D03.Shared.Pip
         }
         public string GetQuestion(byte[] fullPacketData)
         {
-            return Encoding.UTF8.GetString(fullPacketData, Marshal.SizeOf(header), (int)voteLength);
+            return Encoding.UTF8.GetString(fullPacketData, Marshal.SizeOf(header), (int)questionLength);
         }
     }
 }

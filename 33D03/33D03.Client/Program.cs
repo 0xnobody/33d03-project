@@ -30,9 +30,9 @@ namespace _33D03.Client
 
                 client.Start();
 
-                client.Send(new byte[] { 0x01, 0x02, 0x03, 0x04 });
+                PipClient.VoteInit(client);
 
-                return;
+                //return;
 
                 client.Send(new byte[] { 0x05, 0x06, 0x07, 0x08 });
 
