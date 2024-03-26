@@ -35,8 +35,10 @@ namespace _33D03.Server
                 txpServer.OnPacketReceived += (clientState, data) =>
                 {
                     logger.Trace($"Received packet from CID {clientState.ConversationId} with data: {PacketRequestVote.FromBytes(data)}");
-                    PacketRequestVote recievedpacktestvote = PacketRequestVote.FromBytes(data);
-                    string question = recievedpacktestvote.Getguid();
+                    (PacketRequestVote recievedpacktestvote, string question) = PacketRequestVote.Deserialize(data);
+                    string Guidss = recievedpacktestvote.Getguid();
+                    Console.WriteLine(Guidss);
+                    Console.WriteLine(recievedpacktestvote.GetLength());
                     Console.WriteLine(question);
 
 

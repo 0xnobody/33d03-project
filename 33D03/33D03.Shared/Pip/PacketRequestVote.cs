@@ -33,20 +33,20 @@ namespace _33D03.Shared.Pip // Declaring a namespace for organizing related code
             return Serialization.ByteArrayToStructure<PacketRequestVote>(data); // Returning a PacketRequestVote struct created from the byte array.
         }
 
-        public byte[] Serialize(string question) // Defining a method to serialize the struct along with a question string into a byte array.
-        {
-            var questionBytes = Encoding.UTF8.GetBytes(question); // Getting the byte array representation of the question string.
-            if (questionBytes.Length != questionLength) // Checking if the length of the question string matches the expected length.
-            {
-                throw new ArgumentException("Question length does not match provided question"); // Throwing an exception if the lengths do not match.
-            }
 
-            var completedPacketBytes = new byte[Marshal.SizeOf(this) + questionLength]; // Creating a byte array to hold the serialized struct and question string.
-            Buffer.BlockCopy(ToBytes(), 0, completedPacketBytes, 0, Marshal.SizeOf(this)); // Copying the byte array representation of the struct into the completedPacketBytes array.
-            Buffer.BlockCopy(questionBytes, 0, completedPacketBytes, Marshal.SizeOf(header), (int)questionLength); // Copying the byte array representation of the question string into the completedPacketBytes array.
+public byte[] Serialize(string question)
+{
+    var questionBytes = Encoding.UTF8.GetBytes(question);
+    questionLength = (uint)questionBytes.Length;
+    int totalSize = Marshal.SizeOf(typeof(PacketRequestVote)) + questionBytes.Length; 
+    var completedPacketBytes = new byte[totalSize];
+    byte[] structBytes = ToBytes();
+    Buffer.BlockCopy(structBytes, 0, completedPacketBytes, 0, structBytes.Length);
+    Buffer.BlockCopy(questionBytes, 0, completedPacketBytes, structBytes.Length, questionBytes.Length);
 
-            return completedPacketBytes; // Returning the completed byte array.
-        }
+    return completedPacketBytes;
+}
+
 
 
         public static (PacketRequestVote, string) Deserialize(byte[] data)

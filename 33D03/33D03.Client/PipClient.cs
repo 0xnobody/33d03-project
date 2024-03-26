@@ -52,8 +52,9 @@ namespace _33D03.Client
                 var votebytetopacktest = new PacketRequestVote();
                 (votebytetopacktest, string questionsssss)= PacketRequestVote.Deserialize(voteinitbytes);
                 Console.WriteLine(questionsssss);
+                Console.WriteLine(votebytetopacktest.Getguid());
                 Console.WriteLine(Vote_init_packet.Getguid());
-                //Console.WriteLine(votebytetopacktest.GetQuestion(voteinitbytes));
+                Console.WriteLine(votebytetopacktest.GetQuestion(voteinitbytes));
             }
 
         public static void ClientAnswerVote(TxpClient client, string question){
