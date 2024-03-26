@@ -10,6 +10,8 @@ internal class ServerPIP
     private int satResults = 0;
     private int unsatResults = 0;
     private int totalClients = 0;
+    private int timeouts = 0;
+    private int syntaxErrors = 0;
     private int responses = 0;
     private double calculation = 0;
     private string result;
@@ -31,7 +33,7 @@ internal class ServerPIP
     private void TxpServer_OnPacketReceived(TxpClientConversation clientconversation, byte[] data)
     {
         string resp = Encoding.UTF8.GetString(data);
-        logger.Info($"Receoved response from client {clientconversation.LasrtEndPoint}: {resp}");
+        logger.Info($"Receoved response from client {clientconversation.LastEndPoint}: {resp}");
 
         ProcessResp(resp);
     }
@@ -44,7 +46,7 @@ internal class ServerPIP
         logger.Info($"Sent Problem to clients: {problem}");
     }
 
-    //function to generate problems with random operands and aperators of different lenghts
+    //function to generate problems with random operands and aperators of different lenghts in SMT format
     static string ProblemGeneration()
     {
 
@@ -61,18 +63,22 @@ internal class ServerPIP
         for (int i = 0; i < numOperands - 1; i++)
         {
             string[] operators = { "+", "-", "*", "/" };
-            string selectedOp = operators[random.Next(operators.Lenght)];
+            string selectedOp = operators[random.Next(operators.Length)];
             operands.Add(selectedOp); //add selected operators to the list
         }
         StringBuilder equationBuilder = new StringBuilder();
+        equationBuilder.Append("(assert ");
         for (int i = 0; i < numOperands - 1; i++)
         {
-            equationBuilder.Append(operands[i]);
-            equationBuilder.Append(" ");
+            equationBuilder.Append("(");
             equationBuilder.Append(operators[i]);
             equationBuilder.Append(" ");
+            equationBuilder.Append(operands[i]);
+            equationBuilder.Append(" ");
+            equationBuilder.Append(operands[i+1]);
+            equationBuilder.Append(")");
         }
-        equationBuilder.Append(operands[numOperands - 1]); //append last operand
+        equationBuilder.Append(")");
 
         //calculate the total of the equation
         int total = operands[0];
@@ -103,8 +109,9 @@ internal class ServerPIP
                     break;
             }
         }
-        equationBuilder.Append(" = ");
+        equationBuilder.Append("(ssert (= result ");
         equationBuilder.Append(total);
+        equationBuilder.Append("))");
 
         return equationBuilder.ToString();
     }
@@ -119,6 +126,15 @@ internal class ServerPIP
         {
             unsatResults++;
         }
+        else if (resp.ToLower() == "timeout")
+        {
+            timeouts ++;
+        }
+        else if (resp.ToLower() == "sytax error")
+        {
+            syntaxErrors++;
+        }
+
         responses++; //increase resp counter
 
         if (responses == totalClients)
