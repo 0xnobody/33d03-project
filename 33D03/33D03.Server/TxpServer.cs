@@ -10,26 +10,27 @@ using Microsoft.VisualBasic;
 
 namespace _33D03.Server
 {
-    delegate void PacketReceived(TxpClientState clientState, byte[] data);
+    delegate void PacketReceived(TxpClientConversation clientconversation, byte[] data);
 
-    internal class TxpClientState
+    internal class TxpClientConversation
     {
-        public uint ConverstaionId;
+        public uint ConversationId;
         public uint IncomingSequenceNumber;
         public uint OutgoingSequenceNumber;
-        public byte[] PacketBuffer;
         public IPEndPoint LastEndPoint;
 
-        public AutoResetEvent AckReceivedEvent = new AutoResetEvent(false);
-        public Shared.Txp.Interface.AckType AckType;
+        public Shared.Txp.AckHandler AckHandler;
+        public Shared.Txp.PacketBufferer PacketBufferer;
 
-        public TxpClientState(uint converstaionId, IPEndPoint initialEndPoint)
+        public TxpClientConversation(UdpClient client, uint conversationId, IPEndPoint initialEndPoint)
         {
-            ConverstaionId = converstaionId;
+            ConversationId = conversationId;
             IncomingSequenceNumber = 0;
             OutgoingSequenceNumber = 0;
-            PacketBuffer = new byte[0];
             LastEndPoint = initialEndPoint;
+
+            AckHandler = new Shared.Txp.AckHandler(client, conversationId);
+            PacketBufferer = new Shared.Txp.PacketBufferer();
         }
     }
 
@@ -39,8 +40,8 @@ namespace _33D03.Server
 
         private UdpClient server;
 
-        // TODO: cleanup converstaions after no activity after a while
-        public Dictionary<uint, TxpClientState> converstaions = new Dictionary<uint, TxpClientState>();
+        // TODO: cleanup conversations after no activity after a while
+        public Dictionary<uint, TxpClientConversation> conversations = new Dictionary<uint, TxpClientConversation>();
 
         private Thread listenerThread;
 
@@ -56,102 +57,33 @@ namespace _33D03.Server
         {
             listenerThread.Start();
         }
-        public void Send(byte[] data, TxpClientState destination, int attempts = 3)
+        public void Send(byte[] data, TxpClientConversation conversation, int attempts = 3)
         {
             if (attempts == 0)
             {
                 throw new Exception("Failed to send data after 3 attempts");
             }
 
-            var packetsToQueue = SerializeData(data, destination);
+            var packetsToQueue = SerializeData(data, conversation);
 
             foreach (var packet in packetsToQueue)
             {
-                logger.Debug($"Sending packet to cid {destination.ConverstaionId} at {destination.LastEndPoint} with sn {packet.Item1}");
+                logger.Debug($"Sending packet to cid {conversation.ConversationId} at {conversation.LastEndPoint} with sn {packet.Item1}");
 
-                server.Send(packet.Item2, packet.Item2.Length, destination.LastEndPoint);
+                server.Send(packet.Item2, packet.Item2.Length, conversation.LastEndPoint);
 
                 // Wait for the ACK/NACK for a certain timeout
-                if (destination.AckReceivedEvent.WaitOne(TimeSpan.FromMilliseconds(Shared.Txp.Constants.ACK_TIMEOUT_MS)))
+                if (conversation.AckHandler.WaitForAckOrTimeout() == Shared.Txp.AckAction.Rebroadcast)
                 {
-                    if (destination.AckType == Shared.Txp.Interface.AckType.Ack)
-                    {
-                        // ACK received
-                        logger.Debug($"ACK received for sn {packet.Item1}");
-                    }
-                    else
-                    {
-                        // NACK received
-                        logger.Warn($"NACK received for sn {packet.Item1}");
-
-                        // Resend packet, decrease attempt number
-                        Send(data, destination, attempts - 1);
-                    }
-                }
-                else
-                {
-                    // Timeout or NACK received, resend packet
                     logger.Warn($"Timeout passed for sn {packet.Item1}, resending");
 
                     // Resend packet, decrease attempt number
-                    Send(data, destination, attempts - 1);
+                    Send(data, conversation, attempts - 1);
                 }
             }
 
             // Reset outgoing sn after full packet is sent.
-            destination.OutgoingSequenceNumber = 0;
-        }
-
-        private void HandleIncomingClientPacket(TxpClientState converstaion, Shared.Txp.Header header, byte[] receivedData)
-        {
-            switch (header.type)
-            {
-                case Shared.Txp.PacketType.Data:
-                    logger.Debug($"Received {converstaion.ConverstaionId} data packet with sn {header.seqNum}");
-
-                    var lengthOfDataReceived = receivedData.Length - Shared.Txp.Constants.HEADER_SIZE;
-
-                    if (converstaion.IncomingSequenceNumber == header.seqNum)
-                    {
-                        var previousBufferLength = converstaion.PacketBuffer.Length;
-                        Array.Resize(ref converstaion.PacketBuffer, converstaion.PacketBuffer.Length + lengthOfDataReceived);
-                        Buffer.BlockCopy(receivedData, Shared.Txp.Constants.HEADER_SIZE, converstaion.PacketBuffer, previousBufferLength, lengthOfDataReceived);
-                        converstaion.IncomingSequenceNumber++;
-
-                        // logger.Trace($"Current {converstaion.ConverstaionId} buffer state: {BitConverter.ToString(converstaion.PacketBuffer)}");
-
-                        if (header.finish == 1)
-                        {
-                            OnPacketReceived(converstaion, converstaion.PacketBuffer);
-
-                            converstaion.IncomingSequenceNumber = 0;
-                            converstaion.PacketBuffer = new byte[0];
-                        }
-
-                        SendAck(header.seqNum, converstaion.ConverstaionId, converstaion.LastEndPoint);
-                    }
-                    else if (converstaion.IncomingSequenceNumber > header.seqNum)
-                    {
-                        // NACK
-                        logger.Warn($"Received out of order packet with sn {header.seqNum}");
-
-                        SendNack(header.seqNum, converstaion.ConverstaionId, converstaion.LastEndPoint);
-                    }
-                    else
-                    {
-                        logger.Warn($"Received a repeat packet that has already been processed with sn {header.seqNum}. Ignoring.");
-                    }
-
-                    break;
-                case Shared.Txp.PacketType.ACK:
-                    converstaion.AckType = Shared.Txp.Interface.AckType.Ack;
-                    converstaion.AckReceivedEvent.Set();
-                    break;
-                case Shared.Txp.PacketType.NACK:
-                    converstaion.AckType = Shared.Txp.Interface.AckType.Nack;
-                    converstaion.AckReceivedEvent.Set();
-                    break;
-            }
+            conversation.OutgoingSequenceNumber = 0;
         }
 
         private void ListenForPackets()
@@ -170,7 +102,6 @@ namespace _33D03.Server
                 }
 
                 var header = Shared.Txp.Header.FromBytes(receivedData);
-
                 if (!header.IsValid(receivedData))
                 {
                     logger.Warn($"Packet received from {remoteEndPoint} is invalid (magic {header.magic:X}, csum {header.checksum:X}), ignoring");
@@ -185,64 +116,67 @@ namespace _33D03.Server
 
                 logger.Trace($"Received valid packet from of type {Enum.GetName(typeof(Shared.Txp.PacketType), header.type)}");
 
-                if (converstaions.ContainsKey(header.convId) == false)
+                if (conversations.ContainsKey(header.convId) == false)
                 {
-                    converstaions.Add(header.convId, new TxpClientState(header.convId, remoteEndPoint));
+                    conversations.Add(header.convId, new TxpClientConversation(server, header.convId, remoteEndPoint));
                 }
 
-                var converstaion = converstaions[header.convId];
+                var conversation = conversations[header.convId];
 
                 // Update the end-point in case it changed, ie. the client switched networks
-                converstaion.LastEndPoint = remoteEndPoint;
+                conversation.LastEndPoint = remoteEndPoint;
 
-                var clientThread = new Thread(() => HandleIncomingClientPacket(converstaion, header, receivedData));
-                clientThread.Start();
+                switch (header.type)
+                {
+                    case Shared.Txp.PacketType.Data:
+                        logger.Debug($"Received {conversation.ConversationId} data packet with sn {header.seqNum}");
+
+                        var lengthOfDataReceived = receivedData.Length - Shared.Txp.Constants.HEADER_SIZE;
+
+                        if (conversation.IncomingSequenceNumber == header.seqNum)
+                        {
+                            conversation.PacketBufferer.AddPacket(header.GetContainedData(receivedData));
+                            conversation.IncomingSequenceNumber++;
+
+                            // logger.Trace($"Current {conversation.conversationId} buffer state: {BitConverter.ToString(conversation.PacketBuffer)}");
+
+                            conversation.AckHandler.SendAck(header.seqNum, conversation.LastEndPoint);
+
+                            if (header.finish == 1)
+                            {
+                                OnPacketReceived(conversation, conversation.PacketBufferer.ConsumePacket());
+                                conversation.IncomingSequenceNumber = 0;
+                            }
+                        }
+                        else if (conversation.IncomingSequenceNumber > header.seqNum)
+                        {
+                            logger.Warn($"Received out of order packet with sn {header.seqNum}");
+
+                            conversation.AckHandler.SendNack(header.seqNum, conversation.LastEndPoint);
+                        }
+                        else
+                        {
+                            logger.Warn($"Received a repeat packet that has already been processed with sn {header.seqNum}. Ignoring.");
+                        }
+
+                        break;
+                    case Shared.Txp.PacketType.ACK:
+                        conversation.AckHandler.SpecifyAckReceived();
+                        break;
+                    case Shared.Txp.PacketType.NACK:
+                        conversation.AckHandler.SpecifyNackReceived();
+                        break;
+                }
             }
         }
-        private List<Tuple<uint, byte[]>> SerializeData(byte[] data, TxpClientState destination)
+        private List<Tuple<uint, byte[]>> SerializeData(byte[] data, TxpClientConversation conversation)
         {
-            return Shared.Txp.Interface.SerializeData(data, destination.ConverstaionId, ref destination.OutgoingSequenceNumber);
+            return Shared.Txp.Interface.SerializeData(data, conversation.ConversationId, ref conversation.OutgoingSequenceNumber);
         }
 
-        private Tuple<uint, byte[]> CreatePacket(byte[] rawData, bool final, TxpClientState destination)
+        private Tuple<uint, byte[]> CreatePacket(byte[] rawData, bool final, TxpClientConversation conversation)
         {
-            return Shared.Txp.Interface.CreatePacket(rawData, final, destination.ConverstaionId, ref destination.OutgoingSequenceNumber);
-        }
-
-        //
-        // TODO: Perhaps we should also include / verify the checksum for ACK and NACK packets?
-        //
-
-        private void SendAck(uint sequenceNumber, uint conversationId, IPEndPoint remoteEndPoint)
-        {
-            Shared.Txp.Header header = new Shared.Txp.Header
-            {
-                magic = Shared.Txp.Constants.MAGIC,
-                checksum = 0,
-                convId = conversationId,
-                seqNum = sequenceNumber,
-                finish = 1,
-                type = Shared.Txp.PacketType.ACK
-            };
-
-            byte[] ackPacket = header.ToBytes();
-            server.Send(ackPacket, ackPacket.Length, remoteEndPoint);
-        }
-
-        private void SendNack(uint sequenceNumber, uint conversationId, IPEndPoint remoteEndPoint)
-        {
-            Shared.Txp.Header header = new Shared.Txp.Header
-            {
-                magic = Shared.Txp.Constants.MAGIC,
-                checksum = 0,
-                convId = conversationId,
-                seqNum = sequenceNumber,
-                finish = 1,
-                type = Shared.Txp.PacketType.NACK
-            };
-
-            byte[] ackPacket = header.ToBytes();
-            server.Send(ackPacket, ackPacket.Length, remoteEndPoint);
+            return Shared.Txp.Interface.CreatePacket(rawData, final, conversation.ConversationId, ref conversation.OutgoingSequenceNumber);
         }
     }
 }

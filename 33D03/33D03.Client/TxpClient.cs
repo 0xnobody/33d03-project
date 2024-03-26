@@ -24,12 +24,11 @@ namespace _33D03.Client
 
         private uint conversationId = 0;
 
-        private AutoResetEvent ackReceivedEvent = new AutoResetEvent(false);
-        private Shared.Txp.Interface.AckType ackType;
+        private Shared.Txp.AckHandler ackHandler;
 
         private Thread listenThread;
 
-        private byte[] packetBuffer;
+        private Shared.Txp.PacketBufferer packetBufferer;
 
         public event PacketReceived OnPacketReceived;
 
@@ -39,7 +38,9 @@ namespace _33D03.Client
             serverEndPoint = new IPEndPoint(IPAddress.Parse(serverIp), serverPort);
             conversationId = (uint)new Random(DateTime.Now.Millisecond).Next(); // TODO: better random generation
 
-            packetBuffer = new byte[0];
+            ackHandler = new Shared.Txp.AckHandler(client, conversationId);
+
+            packetBufferer = new Shared.Txp.PacketBufferer();
 
             listenThread = new Thread(ListenForData);
         }
@@ -65,27 +66,8 @@ namespace _33D03.Client
                 client.Send(packet.Item2, packet.Item2.Length, serverEndPoint);
 
                 // Wait for the ACK/NACK for a certain timeout
-                if (ackReceivedEvent.WaitOne(TimeSpan.FromMilliseconds(Shared.Txp.Constants.ACK_TIMEOUT_MS)))
+                if (ackHandler.WaitForAckOrTimeout() == Shared.Txp.AckAction.Rebroadcast)
                 {
-                    if (ackType == Shared.Txp.Interface.AckType.Ack)
-                    {
-                        // ACK received
-                        logger.Debug($"ACK received for sn {packet.Item1}");
-                    }
-                    else
-                    {
-                        // NACK received
-                        logger.Warn($"NACK received for sn {packet.Item1}");
-
-                        // Resend packet, decrease attempt number
-                        Send(data, attempts - 1);
-                    }
-                }
-                else
-                {
-                    // Timeout or NACK received, resend packet
-                    logger.Warn($"Timeout passed for sn {packet.Item1}, resending");
-
                     // Resend packet, decrease attempt number
                     Send(data, attempts - 1);
                 }
@@ -100,14 +82,12 @@ namespace _33D03.Client
             while (true)
             {
                 byte[] receivedData = client.Receive(ref serverEndPoint);
-
                 if (receivedData.Length < Shared.Txp.Constants.HEADER_SIZE)
                 {
                     throw new Exception("Received data is too small to be a packet");
                 }
 
                 Shared.Txp.Header header = Shared.Txp.Header.FromBytes(receivedData);
-
                 if (!header.IsValid(receivedData))
                 {
                     logger.Warn($"Packet received from server is invalid (magic {header.magic:X}, csum {header.checksum:X}), ignoring");
@@ -129,29 +109,24 @@ namespace _33D03.Client
 
                         if (incomingSequenceNumber == header.seqNum)
                         {
-                            var previousBufferLength = packetBuffer.Length;
-                            Array.Resize(ref packetBuffer, packetBuffer.Length + lengthOfDataReceived);
-                            Buffer.BlockCopy(receivedData, Shared.Txp.Constants.HEADER_SIZE, packetBuffer, previousBufferLength, lengthOfDataReceived);
+                            packetBufferer.AddPacket(header.GetContainedData(receivedData));
                             incomingSequenceNumber++;
 
                             // logger.Trace($"Current buffer state: {BitConverter.ToString(packetBuffer)}");
 
+                            ackHandler.SendAck(header.seqNum, serverEndPoint);
+
                             if (header.finish == 1)
                             {
-                                OnPacketReceived(packetBuffer);
-
+                                OnPacketReceived(packetBufferer.ConsumePacket());
                                 incomingSequenceNumber = 0;
-                                packetBuffer = new byte[0];
                             }
-
-                            SendAck(header.seqNum);
                         }
                         else if (incomingSequenceNumber > header.seqNum)
                         {
-                            // NACK
                             logger.Warn($"Received out of order packet with sn {header.seqNum}");
 
-                            SendNack(header.seqNum);
+                            ackHandler.SendNack(header.seqNum, serverEndPoint);
                         }
                         else
                         {
@@ -159,12 +134,10 @@ namespace _33D03.Client
                         }
                         break;
                     case Shared.Txp.PacketType.ACK:
-                        ackType = Shared.Txp.Interface.AckType.Ack;
-                        ackReceivedEvent.Set();
+                        ackHandler.SpecifyAckReceived();
                         break;
                     case Shared.Txp.PacketType.NACK:
-                        ackType = Shared.Txp.Interface.AckType.Nack;
-                        ackReceivedEvent.Set();
+                        ackHandler.SpecifyNackReceived();
                         break;
                 }
             }
@@ -178,42 +151,6 @@ namespace _33D03.Client
         private Tuple<uint, byte[]> CreatePacket(byte[] rawData, bool final)
         {
             return Shared.Txp.Interface.CreatePacket(rawData, final, conversationId, ref outgoingSequenceNumber);
-        }
-
-        //
-        // TODO: Perhaps we should also include / verify the checksum for ACK and NACK packets?
-        //
-
-        private void SendAck(uint sequenceNumber)
-        {
-            Shared.Txp.Header header = new Shared.Txp.Header
-            {
-                magic = Shared.Txp.Constants.MAGIC,
-                checksum = 0,
-                convId = conversationId,
-                seqNum = sequenceNumber,
-                finish = 1,
-                type = Shared.Txp.PacketType.ACK
-            };
-
-            byte[] ackPacket = header.ToBytes();
-            client.Send(ackPacket, ackPacket.Length, serverEndPoint);
-        }
-
-        private void SendNack(uint sequenceNumber)
-        {
-            Shared.Txp.Header header = new Shared.Txp.Header
-            {
-                magic = Shared.Txp.Constants.MAGIC,
-                checksum = 0,
-                convId = conversationId,
-                seqNum = sequenceNumber,
-                finish = 1,
-                type = Shared.Txp.PacketType.NACK
-            };
-
-            byte[] ackPacket = header.ToBytes();
-            client.Send(ackPacket, ackPacket.Length, serverEndPoint);
         }
     }
 }

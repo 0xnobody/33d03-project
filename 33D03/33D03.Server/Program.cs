@@ -25,7 +25,7 @@ namespace _33D03.Server
 
                 txpServer.OnPacketReceived += (clientState, data) =>
                 {
-                    logger.Trace($"Received packet from CID {clientState.ConverstaionId} with data: {BitConverter.ToString(data)}");
+                    logger.Trace($"Received packet from CID {clientState.ConversationId} with data: {BitConverter.ToString(data)}");
 
                     if (data.SequenceEqual(new byte[] { 0x01, 0x02, 0x03, 0x04 }))
                     {

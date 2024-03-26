@@ -8,11 +8,6 @@ namespace _33D03.Shared.Txp
 {
     public static class Interface
     {
-        public enum AckType
-        {
-            Ack,
-            Nack
-        }
         public static List<Tuple<uint, byte[]>> SerializeData(byte[] data, uint conversationId, ref uint sequenceNum)
         {
             var chunkSize = Shared.Txp.Constants.DATA_SIZE;

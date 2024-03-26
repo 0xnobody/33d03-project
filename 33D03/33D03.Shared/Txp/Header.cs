@@ -100,5 +100,18 @@ namespace _33D03.Shared.Txp
         {
             return Serialization.ByteArrayToStructure<Header>(data);
         }
+
+        public byte[] GetContainedData(byte[] rawFullPacketBytes)
+        {
+            if (type != PacketType.Data)
+            {
+                throw new InvalidOperationException("Packet does not contain data");
+            }
+
+            var containedDataBytes = new byte[rawFullPacketBytes.Length - Marshal.SizeOf(this)];
+            Buffer.BlockCopy(rawFullPacketBytes, Marshal.SizeOf(this), containedDataBytes, 0, containedDataBytes.Length);
+
+            return containedDataBytes;
+        }
     }
 }
