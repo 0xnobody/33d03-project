@@ -45,5 +45,8 @@ namespace _33D03.Shared.Pip // Declaring a namespace for organizing related code
         {
             return ToBytes(); // Returning the byte array representation of the struct.
         }
+        public ushort getHeaderType(){
+            return (ushort)type;
+        }
     }
 }

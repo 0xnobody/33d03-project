@@ -21,6 +21,14 @@ namespace _33D03.Shared.Pip
         response= constructResponse;
         }
 
+        public Header HeaderInfo{
+        get { return header; }
+        }
+
+        public ushort GetResponse(){
+        return response; 
+        }
+
         public byte[] ToBytes()                 //struct to bytes 
         {
             return Serialization.StructureToByteArray(this);

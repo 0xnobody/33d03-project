@@ -15,6 +15,16 @@ namespace _33D03.Shared.Pip // Declaring a namespace for organizing related code
         Guid voteGuid; // Declaring a field of type Guid.
         uint questionLength; // Declaring a field of type uint.
 
+        public Header HeaderInfo{
+        get { return header; }
+        }
+
+        public PacketBroadcastVote(Header hder, Guid guid, uint QuestionLength){
+            header = hder;
+            voteGuid = guid;
+            questionLength = QuestionLength;
+        }
+        
         public byte[] ToBytes() // Defining a method to convert the struct to a byte array.
         {
             return Serialization.StructureToByteArray(this); // Returning the byte array representation of the struct.
@@ -25,20 +35,45 @@ namespace _33D03.Shared.Pip // Declaring a namespace for organizing related code
             return Serialization.ByteArrayToStructure<PacketBroadcastVote>(data); // Returning a PacketBroadcastVote struct created from the byte array.
         }
 
-        public byte[] Serialize(string vote) // Defining a method to serialize the struct along with a vote string into a byte array.
+public byte[] Serialize(string question)
+{
+    var questionBytes = Encoding.UTF8.GetBytes(question);
+    questionLength = (uint)questionBytes.Length;
+    int totalSize = Marshal.SizeOf(typeof(PacketBroadcastVote)) + questionBytes.Length; 
+    var completedPacketBytes = new byte[totalSize];
+    byte[] structBytes = ToBytes();
+    Buffer.BlockCopy(structBytes, 0, completedPacketBytes, 0, structBytes.Length);
+    Buffer.BlockCopy(questionBytes, 0, completedPacketBytes, structBytes.Length, questionBytes.Length);
+
+    return completedPacketBytes;
+}
+
+
+
+        public static (PacketBroadcastVote, string) Deserialize(byte[] data)
         {
-            var voteBytes = Encoding.UTF8.GetBytes(vote); // Getting the byte array representation of the vote string.
-            if (voteBytes.Length != questionLength) // Checking if the length of the vote string matches the expected length.
-            {
-                throw new ArgumentException("Vote length does not match provided vote"); // Throwing an exception if the lengths do not match.
-            }
-
-            var completedPacketBytes = new byte[Marshal.SizeOf(this) + questionLength]; // Creating a byte array to hold the serialized struct and vote string.
-            Buffer.BlockCopy(ToBytes(), 0, completedPacketBytes, 0, Marshal.SizeOf(this)); // Copying the byte array representation of the struct into the completedPacketBytes array.
-            Buffer.BlockCopy(voteBytes, 0, completedPacketBytes, Marshal.SizeOf(header), (int)questionLength); // Copying the byte array representation of the vote string into the completedPacketBytes array.
-
-            return completedPacketBytes; // Returning the completed byte array.
-        }
+        // Extract the PacketRequestVote structure
+        int sizeOfPacketBroadcastVote = Marshal.SizeOf(typeof(PacketBroadcastVote));
+        IntPtr ptr = Marshal.AllocHGlobal(sizeOfPacketBroadcastVote);
+        try
+        {
+        Marshal.Copy(data, 0, ptr, sizeOfPacketBroadcastVote);
+        PacketBroadcastVote packetBroadcastVote = (PacketBroadcastVote)Marshal.PtrToStructure(ptr, typeof(PacketBroadcastVote));
+        
+        // Calculate the start index and length of the question string
+        int questionStartIndex = sizeOfPacketBroadcastVote;
+        int questionLength = data.Length - questionStartIndex; // Assuming the rest of the array is the question
+        
+        // Extract the question string
+        string question = Encoding.UTF8.GetString(data, questionStartIndex, questionLength);
+        
+        return (packetBroadcastVote, question);
+    }
+    finally
+    {
+        Marshal.FreeHGlobal(ptr);
+    }
+}
 
         public string GetQuestion(byte[] fullPacketData) // Defining a method to extract the vote string from a serialized PacketBroadcastVote.
         {

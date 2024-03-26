@@ -34,12 +34,26 @@ namespace _33D03.Server
                 // Subscribe to the OnPacketReceived event with an anonymous method to handle incoming packets.
                 txpServer.OnPacketReceived += (clientState, data) =>
                 {
-                    logger.Trace($"Received packet from CID {clientState.ConversationId} with data: {PacketRequestVote.FromBytes(data)}");
+                    logger.Trace($"Received packet from CID {clientState.ConversationId} with data: {PacketRequestVote.Deserialize(data)}");
                     (PacketRequestVote recievedpacktestvote, string question) = PacketRequestVote.Deserialize(data);
-                    string Guidss = recievedpacktestvote.Getguid();
-                    Console.WriteLine(Guidss);
-                    Console.WriteLine(recievedpacktestvote.GetLength());
-                    Console.WriteLine(question);
+                    PacketType headerType = recievedpacktestvote.HeaderInfo.type;
+                    ushort haedertypeshort = (ushort)headerType;
+                    Console.WriteLine("header type is " + haedertypeshort);
+                    if(haedertypeshort == 2){
+                        var sendQuestion = question;
+                        var questionlength = (uint)question.Length;
+                        var header = new Header(PacketType.Vote_Broadcast_Vote_S2C);
+                        Guid voteGuid = Guid.NewGuid();
+                        var Vote_init_packet = new PacketBroadcastVote(header, voteGuid, questionlength);
+                        var voteinitbytes = Vote_init_packet.Serialize(question);
+                        txpServer.Send(voteinitbytes, clientState);
+                        logger.Info("Client initiate vote requst with SMTLIB question" + question);
+                    }
+
+
+
+                    };
+                    
 
 
 
@@ -59,7 +73,7 @@ namespace _33D03.Server
                         txpServer.Send(response, clientState);
                     }*/
 
-                };
+
 
                 // Starts the server to begin listening for incoming connections and packets.
                 txpServer.Start();

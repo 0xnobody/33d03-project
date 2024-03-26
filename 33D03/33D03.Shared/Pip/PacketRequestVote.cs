@@ -2,6 +2,7 @@
 using System.Collections.Generic; // Importing the namespace for generic collections.
 using System.Linq; // Importing the namespace for Language-Integrated Query (LINQ), which provides methods for querying and manipulating data.
 using System.Runtime.InteropServices; // Importing the namespace for interaction with COM objects, services, and unmanaged code.
+using System.Security.Cryptography.X509Certificates;
 using System.Text; // Importing the namespace for classes representing ASCII and Unicode character encodings.
 using System.Threading.Tasks; // Importing the namespace for types that simplify working with tasks, including the ability to execute multiple tasks concurrently.
 
@@ -14,7 +15,9 @@ namespace _33D03.Shared.Pip // Declaring a namespace for organizing related code
         Guid voteGuid; // Declaring a field of type Guid.
         uint questionLength; // Declaring a field of type uint.
 
-
+        public Header HeaderInfo{
+        get { return header; }
+        }
 
         public PacketRequestVote(Header constructheader, Guid constructvoteGuid, uint constructquestionLength) // Defining a constructor for the struct.
         {
@@ -72,6 +75,8 @@ public byte[] Serialize(string question)
     {
         Marshal.FreeHGlobal(ptr);
     }
+    
+
 }
 
 
