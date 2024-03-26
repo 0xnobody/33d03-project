@@ -1,33 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using NLog;
+using System;
 using System.Text;
-using System.Threading.Tasks;
+using _33D03.Server;
 
-namespace _33D03.Server
-{
-    internal class PipServer
-    {
-        private TxpServer txpServer;
+namespace _33D03.Server{
+    public static class PipServer{
 
-        public PipServer(TxpServer txpServer)
-        {
-            this.txpServer = txpServer;
-        }
-
-        public void Start()
-        {
-            txpServer.OnPacketReceived += TxpServer_OnPacketReceived;
-            txpServer.Start();
-        }
-
-        private void TxpServer_OnPacketReceived(TxpClientConversation clientconversation, byte[] data)
-        {
-            throw new NotImplementedException();
-        }
-
-        private void SendHello()
-        {
-        }
     }
 }
