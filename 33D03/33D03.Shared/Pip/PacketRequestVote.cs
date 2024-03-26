@@ -7,12 +7,14 @@ using System.Threading.Tasks; // Importing the namespace for types that simplify
 
 namespace _33D03.Shared.Pip // Declaring a namespace for organizing related code and reducing naming conflicts.
 {
-    [StructLayout(LayoutKind.Sequential, Pack = 1, Size = 20)] // Applying an attribute to control the physical layout of the data fields in this struct when it is passed to unmanaged code.
+    [StructLayout(LayoutKind.Sequential, Pack = 1, Size = 36)] // Applying an attribute to control the physical layout of the data fields in this struct when it is passed to unmanaged code.
     public struct PacketRequestVote // Declaring a public structure named PacketRequestVote.
     {
         Header header; // Declaring a field of type Header.
         Guid voteGuid; // Declaring a field of type Guid.
         uint questionLength; // Declaring a field of type uint.
+
+
 
         public PacketRequestVote(Header constructheader, Guid constructvoteGuid, uint constructquestionLength) // Defining a constructor for the struct.
         {
@@ -46,9 +48,51 @@ namespace _33D03.Shared.Pip // Declaring a namespace for organizing related code
             return completedPacketBytes; // Returning the completed byte array.
         }
 
+
+        public static (PacketRequestVote, string) Deserialize(byte[] data)
+        {
+        // Extract the PacketRequestVote structure
+        int sizeOfPacketRequestVote = Marshal.SizeOf(typeof(PacketRequestVote));
+        IntPtr ptr = Marshal.AllocHGlobal(sizeOfPacketRequestVote);
+        try
+        {
+        Marshal.Copy(data, 0, ptr, sizeOfPacketRequestVote);
+        PacketRequestVote packetRequestVote = (PacketRequestVote)Marshal.PtrToStructure(ptr, typeof(PacketRequestVote));
+        
+        // Calculate the start index and length of the question string
+        int questionStartIndex = sizeOfPacketRequestVote;
+        int questionLength = data.Length - questionStartIndex; // Assuming the rest of the array is the question
+        
+        // Extract the question string
+        string question = Encoding.UTF8.GetString(data, questionStartIndex, questionLength);
+        
+        return (packetRequestVote, question);
+    }
+    finally
+    {
+        Marshal.FreeHGlobal(ptr);
+    }
+}
+
+
+
+
+
+
+
+
+
         public string GetQuestion(byte[] fullPacketData) // Defining a method to extract the question string from a serialized PacketRequestVote.
         {
             return Encoding.UTF8.GetString(fullPacketData, Marshal.SizeOf(header), (int)questionLength); // Returning the question string extracted from the byte array.
         }
+
+        public string GetLength(){
+            return questionLength.ToString();
+        }
+        public string Getguid(){
+            return voteGuid.ToString();
+        }
     }
+
 }

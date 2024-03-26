@@ -42,13 +42,18 @@ namespace _33D03.Client
         public static void VoteInit(TxpClient client)
             {
                 var question = GenerateSMTLIBString();
+                Console.WriteLine(question);
                 var questionlength = (uint)question.Length;
                 var header = new Header(PacketType.Vote_Request_Vote_C2S);
                 Guid voteGuid = Guid.NewGuid();
                 var Vote_init_packet = new PacketRequestVote(header, voteGuid, questionlength);
-                Vote_init_packet.Serialize(question);
-                byte[] voteinitbytes = Vote_init_packet.ToBytes();
+                var voteinitbytes = Vote_init_packet.Serialize(question);
                 client.Send(voteinitbytes);
+                var votebytetopacktest = new PacketRequestVote();
+                (votebytetopacktest, string questionsssss)= PacketRequestVote.Deserialize(voteinitbytes);
+                Console.WriteLine(questionsssss);
+                Console.WriteLine(Vote_init_packet.Getguid());
+                //Console.WriteLine(votebytetopacktest.GetQuestion(voteinitbytes));
             }
 
         public static void ClientAnswerVote(TxpClient client, string question){

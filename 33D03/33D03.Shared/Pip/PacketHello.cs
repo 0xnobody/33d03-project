@@ -55,9 +55,6 @@ namespace _33D03.Shared.Pip // Declaring a namespace for organizing related code
             return completedPacketBytes; // Returning the completed byte array.
         }
 
-
-
-
         public Feature[] GetFeatures(byte[] fullPacketData) // Defining a method to extract the features array from a serialized PacketHello.
         {
             Feature[] features = new Feature[numFeatures]; // Creating a new features array.
@@ -67,8 +64,5 @@ namespace _33D03.Shared.Pip // Declaring a namespace for organizing related code
             }
             return features; // Returning the features array.
         }
-
-
-        
     }
 }

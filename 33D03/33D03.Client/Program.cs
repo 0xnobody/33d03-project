@@ -34,15 +34,15 @@ namespace _33D03.Client
 
                 //return;
 
-                client.Send(new byte[] { 0x05, 0x06, 0x07, 0x08 });
+                //client.Send(new byte[] { 0x05, 0x06, 0x07, 0x08 });
 
-                var bigData = new byte[1024];
+                /*var bigData = new byte[1024];
                 for (int i = 0; i < bigData.Length; i++)
                 {
                     bigData[i] = (byte)i;
                 }
 
-                client.Send(bigData);
+                client.Send(bigData); */
             }
             catch (Exception ex)
             {

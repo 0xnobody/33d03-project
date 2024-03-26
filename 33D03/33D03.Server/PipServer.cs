@@ -5,6 +5,15 @@ using _33D03.Server;
 
 namespace _33D03.Server{
     public static class PipServer{
+        internal static void PipServerBroadcastQuestion(TxpServer server){
+            
+        }
+
+
+
+
+
+
 
     }
 }

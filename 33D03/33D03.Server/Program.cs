@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using _33D03.Shared;
 using _33D03.Shared.Pip;
+using System.Data.SqlTypes;
 
 namespace _33D03.Server
 {
@@ -33,8 +34,16 @@ namespace _33D03.Server
                 // Subscribe to the OnPacketReceived event with an anonymous method to handle incoming packets.
                 txpServer.OnPacketReceived += (clientState, data) =>
                 {
-                    // Logs the receipt of a packet using Trace level, including the client's ID and the packet data as a hex string.
-                    logger.Trace($"Received packet from CID {clientState.ConversationId} with data: {BitConverter.ToString(data)}");
+                    logger.Trace($"Received packet from CID {clientState.ConversationId} with data: {PacketRequestVote.FromBytes(data)}");
+                    PacketRequestVote recievedpacktestvote = PacketRequestVote.FromBytes(data);
+                    string question = recievedpacktestvote.Getguid();
+                    Console.WriteLine(question);
+
+
+
+
+                    /*// Logs the receipt of a packet using Trace level, including the client's ID and the packet data as a hex string.
+                    logger.Trace($"Received packet from CID {clientState.ConversationId} with data: {}");
 
                     // Checks if the received data matches a specific byte sequence.
                     if (data.SequenceEqual(new byte[] { 0x01, 0x02, 0x03, 0x04 }))
@@ -46,7 +55,7 @@ namespace _33D03.Server
                         byte[] response = new byte[] { 0x13, 0x13, 0x13, 0x13 };
                         // Sends the prepared response to the client who sent the original packet.
                         txpServer.Send(response, clientState);
-                    }
+                    }*/
 
                 };
 
