@@ -38,12 +38,12 @@ namespace _33D03.Server
                 int vote_counter = 0;
                 int unsatcount = 0;
                 int satcount = 0;
-
+                string filePath = @"C:\PipList\server_output.txt";
 
                 txpServer.OnPacketReceived += (clientState, data) =>
                 {
                     var receivedHeader = Header.FromBytes(data);
-                    
+
                     int connectedclients = txpServer.conversations.Count;
                     logger.Trace($"Received packet from CID {clientState.ConversationId} of type {receivedHeader.type}");
 
@@ -86,13 +86,21 @@ namespace _33D03.Server
                                 var conversation = conversationEntry.Value;
                                 txpServer.Send(finaldata, conversation);
                             }
-                            vote_counter =0;
+                            vote_counter = 0;
                             unsatcount = 0;
                             satcount = 0;
                             Console.WriteLine(vote_counter + " " + unsatcount + " " + satcount);
                             logger.Info($"final packet result for guid {voteresultpacket.GetGuid()} is {final}");
+                            var ServerLogToWrite = new ServerVoteLog(voteresultpacket.GetGuid(), final);
+                            DateTime currentTime = DateTime.Now;
+
+                            using (StreamWriter writer = new StreamWriter(filePath, true))
+                            {
+                                writer.Write(currentTime + " " + ServerLogToWrite.GetGuid() + " ");
+                                writer.WriteLine(final);
+                            }
                         }
-                        
+
                     }
                 };
 
