@@ -60,7 +60,8 @@ namespace _33D03.Client
             var header = new Header(PacketType.Vote_Answer_Vote_C2S);
             Guid voteGuid = voteID;
             uint result = SMTChecker(question);
-            var Client_Answer_Packet = new PacketAnswerVote(header, voteGuid, (ushort)result);
+            Guid newguid = Guid.NewGuid();
+            var Client_Answer_Packet = new PacketAnswerVote(header, voteGuid,newguid, (ushort)result);
             if (Client_Answer_Packet.GetResponse() == 1)
             {
                 Console.WriteLine("Satisfied");
@@ -72,6 +73,7 @@ namespace _33D03.Client
             else Console.WriteLine("Syntax Error");
             byte[] answerinitbytes = Client_Answer_Packet.Serialize();
             client.Send(answerinitbytes);
+            Console.WriteLine("NEW GUID FOR THIS CLIENT RESPONSE IS "+ Client_Answer_Packet.GetNewGuid());
             logger.Info("Client respond with " + Client_Answer_Packet.GetResponse() + "vote ID: " +voteGuid);
         }
 

@@ -17,6 +17,8 @@ namespace _33D03.Server
         // Creates a logger instance for this class using NLog.
         private static NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
 
+
+
         private static void Main(string[] args)
         {
             try
@@ -32,29 +34,46 @@ namespace _33D03.Server
                 TxpServer txpServer = new TxpServer(1151);
 
                 // Subscribe to the OnPacketReceived event with an anonymous method to handle incoming packets.
+
+                int vote_counter = 0;
+                int unsatcount = 0;
+                int satcount = 0;
+
+
                 txpServer.OnPacketReceived += (clientState, data) =>
                 {
                     var receivedHeader = Header.FromBytes(data);
-                    int vote_counter = 0;
-                    int unsatcount = 0;
-                    int satcount = 0;
+                    
                     int connectedclients = txpServer.conversations.Count;
                     logger.Trace($"Received packet from CID {clientState.ConversationId} of type {receivedHeader.type}");
 
                     if (receivedHeader.type == PacketType.Vote_Request_Vote_C2S)
                     {
+                        vote_counter = 0;
+                        unsatcount = 0;
+                        satcount = 0;
                         PipServer.PipServerBroadcastQuestion(txpServer, data);
 
                     }
                     else if (receivedHeader.type == PacketType.Vote_Answer_Vote_C2S)
                     {
+                        Console.WriteLine();
+                        Console.WriteLine();
+                        Console.WriteLine();
+                        Console.WriteLine(txpServer.conversations.Count);
+                        Console.WriteLine();
+                        Console.WriteLine();
+                        Console.WriteLine();
                         PacketAnswerVote voteresultpacket = PacketAnswerVote.FromBytes(data);
                         logger.Info("Client answered vote");
                         vote_counter += 1;
                         ushort final = 0;
                         if (voteresultpacket.GetResponse() == 1) satcount++;
                         else if (voteresultpacket.GetResponse() == 0) unsatcount++;
-
+                        Console.WriteLine(vote_counter + " " + unsatcount + " " + satcount);
+                        Console.WriteLine(voteresultpacket.GetResponse());
+                        Console.WriteLine();
+                        Console.WriteLine();
                         if (vote_counter == txpServer.conversations.Count)
                         {
                             final = PipServer.OrganizeData(txpServer, vote_counter, unsatcount, satcount);
@@ -67,9 +86,13 @@ namespace _33D03.Server
                                 var conversation = conversationEntry.Value;
                                 txpServer.Send(finaldata, conversation);
                             }
+                            vote_counter =0;
+                            unsatcount = 0;
+                            satcount = 0;
+                            Console.WriteLine(vote_counter + " " + unsatcount + " " + satcount);
+                            logger.Info($"final packet result for guid {voteresultpacket.GetGuid()} is {final}");
                         }
-                        logger.Info($"final packet result for guid {voteresultpacket.GetGuid()} is {final}");
-
+                        
                     }
                 };
 

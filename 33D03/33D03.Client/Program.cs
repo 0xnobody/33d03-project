@@ -106,7 +106,16 @@ namespace _33D03.Client
                     }
                 };
 
-                PipClient.VoteInit(client); // Assuming PipClient is a class or static method where VoteInit is defined
+                string inputstr = "null";
+                while (inputstr != "Exit")
+                {
+                    inputstr = Console.ReadLine();
+                    if (inputstr == "vote")
+                    {
+                        PipClient.VoteInit(client);
+                        break;
+                    }
+                }
 
                 client.Start();
 
