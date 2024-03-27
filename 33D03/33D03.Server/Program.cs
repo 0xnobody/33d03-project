@@ -34,12 +34,14 @@ namespace _33D03.Server
                 // Subscribe to the OnPacketReceived event with an anonymous method to handle incoming packets.
                 txpServer.OnPacketReceived += (clientState, data) =>
                 {
-                    logger.Trace($"Received packet from CID {clientState.ConversationId} with data: {PacketRequestVote.Deserialize(data)}");
-                    (PacketRequestVote recievedpacktestvote, string question) = PacketRequestVote.Deserialize(data);
-                    PacketType headerType = recievedpacktestvote.HeaderInfo.type;
-                    ushort haedertypeshort = (ushort)headerType;
-                    Console.WriteLine("header type is " + haedertypeshort);
-                    if(haedertypeshort == 2){
+                    var receivedHeader = Header.FromBytes(data);
+
+                    logger.Trace($"Received packet from CID {clientState.ConversationId} of type {receivedHeader.type}");
+
+                    if (receivedHeader.type == PacketType.Vote_Request_Vote_C2S)
+                    {
+                        (PacketRequestVote recievedpacktestvote, string question) = PacketRequestVote.Deserialize(data);
+
                         var sendQuestion = question;
                         var questionlength = (uint)question.Length;
                         var header = new Header(PacketType.Vote_Broadcast_Vote_S2C);
@@ -49,31 +51,26 @@ namespace _33D03.Server
                         txpServer.Send(voteinitbytes, clientState);
                         logger.Info("Client initiate vote requst with SMTLIB question" + question);
                     }
-
-
-
-                    };
-                    
-
-
-
-
-                    /*// Logs the receipt of a packet using Trace level, including the client's ID and the packet data as a hex string.
-                    logger.Trace($"Received packet from CID {clientState.ConversationId} with data: {}");
-
-                    // Checks if the received data matches a specific byte sequence.
-                    if (data.SequenceEqual(new byte[] { 0x01, 0x02, 0x03, 0x04 }))
+                    else if (receivedHeader.type == PacketType.Vote_Answer_Vote_C2S)
                     {
-                        // Logs a Debug level message indicating a specific test packet was received.
-                        logger.Debug("Received test packet 1, sending back 0x13 0x13 0x13 0x13");
+                        logger.Info("Client answered vote");
+                    }
+                };
 
-                        // Prepares a response byte array to send back to the client.
-                        byte[] response = new byte[] { 0x13, 0x13, 0x13, 0x13 };
-                        // Sends the prepared response to the client who sent the original packet.
-                        txpServer.Send(response, clientState);
-                    }*/
+                /*// Logs the receipt of a packet using Trace level, including the client's ID and the packet data as a hex string.
+                logger.Trace($"Received packet from CID {clientState.ConversationId} with data: {}");
 
+                // Checks if the received data matches a specific byte sequence.
+                if (data.SequenceEqual(new byte[] { 0x01, 0x02, 0x03, 0x04 }))
+                {
+                    // Logs a Debug level message indicating a specific test packet was received.
+                    logger.Debug("Received test packet 1, sending back 0x13 0x13 0x13 0x13");
 
+                    // Prepares a response byte array to send back to the client.
+                    byte[] response = new byte[] { 0x13, 0x13, 0x13, 0x13 };
+                    // Sends the prepared response to the client who sent the original packet.
+                    txpServer.Send(response, clientState);
+                }*/
 
                 // Starts the server to begin listening for incoming connections and packets.
                 txpServer.Start();

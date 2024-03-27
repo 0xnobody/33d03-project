@@ -14,19 +14,21 @@ namespace _33D03.Shared.Pip
         Guid voteId;
         ushort response;
 
-    public PacketAnswerVote(Header constructheader, Guid constructvoteGuid, ushort constructResponse)       //constructor
+        public PacketAnswerVote(Header constructheader, Guid constructvoteGuid, ushort constructResponse)       //constructor
         {
-        header = constructheader;
-        voteId = constructvoteGuid;
-        response= constructResponse;
+            header = constructheader;
+            voteId = constructvoteGuid;
+            response = constructResponse;
         }
 
-        public Header HeaderInfo{
-        get { return header; }
+        public Header HeaderInfo
+        {
+            get { return header; }
         }
 
-        public ushort GetResponse(){
-        return response; 
+        public ushort GetResponse()
+        {
+            return response;
         }
 
         public byte[] ToBytes()                 //struct to bytes 

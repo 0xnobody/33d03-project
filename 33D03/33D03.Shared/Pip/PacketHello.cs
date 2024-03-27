@@ -22,21 +22,15 @@ namespace _33D03.Shared.Pip // Declaring a namespace for organizing related code
         uint version; // Declaring a field of type uint.
         ushort numFeatures; // Declaring a field of type ushort.
 
-
-
         public byte[] ToBytes() // Defining a method to convert the struct to a byte array.
         {
             return Serialization.StructureToByteArray(this); // Returning the byte array representation of the struct.
         }
 
-
-
         public static Header FromBytes(byte[] data) // Defining a static method to create a Header struct from a byte array.
         {
             return Serialization.ByteArrayToStructure<Header>(data); // Returning a Header struct created from the byte array.
         }
-
-
 
         public byte[] Serialize(Feature[] features) // Defining a method to serialize the struct along with a features array into a byte array.
         {

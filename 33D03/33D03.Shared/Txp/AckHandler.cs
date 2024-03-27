@@ -1,10 +1,12 @@
-﻿using System;
+﻿using Microsoft.Z3;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
+using NLog;
 
 namespace _33D03.Shared.Txp
 {
@@ -24,6 +26,7 @@ namespace _33D03.Shared.Txp
         private uint converstaionId;
         private AckType lastAckType;
         private AutoResetEvent ackReceivedEvent = new AutoResetEvent(false);
+        private static NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
 
         public AckHandler(UdpClient udpClient, uint converstaionId)
         {
@@ -71,9 +74,10 @@ namespace _33D03.Shared.Txp
                 type = Shared.Txp.PacketType.ACK
             };
 
+            logger.Info("Sending ACK with sn " + sequenceNumber);
+
             byte[] ackPacket = header.ToBytes();
             udpClient.Send(ackPacket, ackPacket.Length, remoteEndPoint);
-            //Console.WriteLine("ack RECIEVED");
         }
 
         public void SendNack(uint sequenceNumber, IPEndPoint remoteEndPoint)
@@ -87,6 +91,8 @@ namespace _33D03.Shared.Txp
                 finish = 1,
                 type = Shared.Txp.PacketType.NACK
             };
+
+            logger.Info("Sending NACK with sn " + sequenceNumber);
 
             byte[] ackPacket = header.ToBytes();
             udpClient.Send(ackPacket, ackPacket.Length, remoteEndPoint);

@@ -13,22 +13,6 @@ namespace _33D03.Client
     {
         private static NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
 
-        public static void ProcessInput(object obj)
-        {
-        if (obj is TxpClient client) // Check if obj is of type TxpClient and cast it
-        {
-            string inputstr = null;
-            do{   
-                inputstr = Console.ReadLine();
-                if (inputstr == "InitVote"){
-                    PipClient.VoteInit(client); // Assuming PipClient is a class or static method where VoteInit is defined
-                    
-                }
-            }
-            while (inputstr != "exit");
-        }
-    }
-
         private static void Main(string[] args)
         {
             try
@@ -43,26 +27,29 @@ namespace _33D03.Client
 
                 client.OnPacketReceived += (data) =>
                 {
-                    logger.Trace($"Received packet from Server with data: {PacketBroadcastVote.Deserialize(data)}");
-                    (PacketBroadcastVote recievedBroadcastPacket, string question) = PacketBroadcastVote.Deserialize(data);
-                    PacketType headerType = recievedBroadcastPacket.HeaderInfo.type;
-                    ushort haedertypeshort = (ushort)headerType;
-                    Console.WriteLine("header type is " + haedertypeshort);
-                    if(haedertypeshort==3){
-                        Console.WriteLine("Solving for smtlib question" + question);
-                        PipClient.ClientAnswerVote(client, question);
+                    var pipHeader = Header.FromBytes(data);
+
+                    switch (pipHeader.type)
+                    {
+                        case PacketType.Vote_Broadcast_Vote_S2C:
+                            logger.Trace($"Received packet from Server with data: {PacketBroadcastVote.Deserialize(data)}");
+                            (PacketBroadcastVote recievedBroadcastPacket, string question) = PacketBroadcastVote.Deserialize(data);
+                            PacketType headerType = recievedBroadcastPacket.HeaderInfo.type;
+                            Console.WriteLine("header type is " + headerType);
+
+                            if (headerType == PacketType.Vote_Broadcast_Vote_S2C)
+                            {
+                                Console.WriteLine("Solving for smtlib question: " + question);
+                                PipClient.ClientAnswerVote(client, question);
+                            }
+                            break;
                     }
                 };
 
-                
+                PipClient.VoteInit(client); // Assuming PipClient is a class or static method where VoteInit is defined
 
                 client.Start();
-                Thread write = new Thread(new ParameterizedThreadStart(ProcessInput));
-                write.Start(client);
 
-                //PipClient.VoteInit(client);
-
-                
             }
             catch (Exception ex)
             {

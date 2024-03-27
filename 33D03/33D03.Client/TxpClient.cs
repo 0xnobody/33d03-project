@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using _33D03.Shared;
 using System.Runtime.InteropServices;
 using Microsoft.VisualBasic;
+using Microsoft.Z3;
 
 namespace _33D03.Client
 {
@@ -67,7 +68,10 @@ namespace _33D03.Client
         // Starts the listening thread for incoming data.
         public void Start()
         {
-            listenThread.Start();
+            while (true)
+            {
+                ListenForData();
+            }
         }
         
         // Sends data to the server, with a specified number of retry attempts.
@@ -92,7 +96,7 @@ namespace _33D03.Client
                 client.Send(packet.Item2, packet.Item2.Length, serverEndPoint);
 
                 // Wait for an ACK or a timeout. If a NACK is received, resend.
-                if (ackHandler.WaitForAckOrTimeout() == Shared.Txp.AckAction.Rebroadcast)
+                if (ListenForAck() == Shared.Txp.AckType.Nack)
                 {
                     // If a NACK is received, resend the data with one less attempt.
                     Send(data, attempts - 1);
@@ -103,87 +107,139 @@ namespace _33D03.Client
             outgoingSequenceNumber = 0;
         }
 
-        // Listens for incoming data from the server, processing each packet received.
-        private void ListenForData()
+        private byte[]? ReceiveWithTimeout(ref IPEndPoint remoteEndPoint, TimeSpan timeout)
         {
-            while (true) // Infinite loop to continuously listen for data.
+            var asyncResult = client.BeginReceive(null, null);
+            asyncResult.AsyncWaitHandle.WaitOne(timeout);
+            if (asyncResult.IsCompleted)
             {
-                // Block and wait to receive data from the server.
-                byte[] receivedData = client.Receive(ref serverEndPoint);
-                // If the data received is smaller than the minimum header size, it's invalid.
-                if (receivedData.Length < Shared.Txp.Constants.HEADER_SIZE)
-                {
-                    throw new Exception("Received data is too small to be a packet");
-                }
+                IPEndPoint remoteEP = null;
+                byte[] receivedData = client.EndReceive(asyncResult, ref remoteEP);
 
-                // Deserialize the header from the received data.
-                Shared.Txp.Header header = Shared.Txp.Header.FromBytes(receivedData);
-                // Check if the packet is valid based on the header info.
-                if (!header.IsValid(receivedData))
-                {
-                    // Log a warning if the packet is invalid.
-                    logger.Warn($"Packet received from server is invalid (magic {header.magic:X}, csum {header.checksum:X}), ignoring");
-                    continue;
-                }
-
-                // Process the packet based on its type.
-                switch (header.type)
-                {
-
-                    // Case when the packet type is Data.
-                    case Shared.Txp.PacketType.Data:
-                        // Log receipt of a data packet.
-                        logger.Debug($"Received data packet with sn {header.seqNum}");
-
-                        // Calculate the length of the actual data received by subtracting the header size.
-                        var lengthOfDataReceived = receivedData.Length - Shared.Txp.Constants.HEADER_SIZE;
-
-                        // If the sequence number matches the expected incoming sequence number...
-                        if (incomingSequenceNumber == header.seqNum)
-                        {
-                            // Add the packet's data to the buffer for reassembly.
-                            packetBufferer.AddPacket(header.GetContainedData(receivedData));
-                            // Increment expected incoming sequence number for the next packet.
-                            incomingSequenceNumber++;
-
-                            // Acknowledge receipt of the packet.
-                            ackHandler.SendAck(header.seqNum, serverEndPoint);
-
-                            // If this packet is marked as the final packet in a message...
-                            if (header.finish == 1)
-                            {
-                                // Raise the OnPacketReceived event with the assembled message.
-                                OnPacketReceived(packetBufferer.ConsumePacket());
-                                // Reset the incoming sequence number for a new message.
-                                incomingSequenceNumber = 0;
-                            }
-                        }
-                        // If the received packet's sequence number is less than expected, it's out of order.
-                        else if (incomingSequenceNumber > header.seqNum)
-                        {
-                            logger.Warn($"Received out of order packet with sn {header.seqNum}");
-                            // Send a NACK in response to request retransmission.
-                            ackHandler.SendNack(header.seqNum, serverEndPoint);
-                        }
-                        else
-                        {
-                            // Log receipt of a repeated packet.
-                            logger.Warn($"Received a repeat packet that has already been processed with sn {header.seqNum}. Ignoring.");
-                        }
-                        break;
-                    // Case when the packet type is ACK (Acknowledgement).
-                    case Shared.Txp.PacketType.ACK:
-                        // Notify the AckHandler that an ACK was received.
-                        ackHandler.SpecifyAckReceived();
-                        break;
-                    // Case when the packet type is NACK (Negative Acknowledgement).
-                    case Shared.Txp.PacketType.NACK:
-                        // Notify the AckHandler that a NACK was received.
-                        ackHandler.SpecifyNackReceived();
-                        break;
-                }
+                return receivedData;
+            }
+            else
+            {
+                return null;
             }
         }
+        private Tuple<Shared.Txp.Header, byte[]>? ListenForPacket(TimeSpan? timeout = null)
+        {
+            // Block and wait to receive data, storing the sender's endpoint.
+            byte[]? receivedData;
+
+            if (timeout == null)
+            {
+                receivedData = client.Receive(ref serverEndPoint);
+            }
+            else
+            {
+                receivedData = ReceiveWithTimeout(ref serverEndPoint, timeout ?? TimeSpan.MinValue);
+            }
+
+            // Validate the minimum size of received data to ensure it contains a complete header.
+            if (receivedData.Length < Shared.Txp.Constants.HEADER_SIZE)
+            {
+                logger.Log(NLog.LogLevel.Error, "Received data is too small to be a packet");
+                throw new Exception("Received data is too small to be a packet");
+            }
+
+            // Deserialize the header from the received data to understand the packet's metadata.
+            var header = Shared.Txp.Header.FromBytes(receivedData);
+            // Validate the packet using the header information. Invalid packets are ignored.
+            if (!header.IsValid(receivedData))
+            {
+                logger.Warn($"Packet received from server is invalid (magic {header.magic:X}, csum {header.checksum:X})");
+                // If the packet is invalid, skip the rest of the loop and wait for the next packet.
+                return null;
+            }
+
+            return new Tuple<Shared.Txp.Header, byte[]>(header, receivedData);
+        }
+
+        private Shared.Txp.AckType ListenForAck()
+        {
+            var pckt = ListenForPacket(TimeSpan.FromMilliseconds(Shared.Txp.Constants.ACK_TIMEOUT_MS));
+            if (pckt == null)
+            {
+                logger.Warn("Timout occurred");
+                return Shared.Txp.AckType.Nack;
+            }
+
+            if (pckt.Item1.type == Shared.Txp.PacketType.Data)
+            {
+                logger.Warn("Received DATA PACKET where ACK/NACK was expected");
+            }
+
+            if (pckt.Item1.type == Shared.Txp.PacketType.ACK)
+            {
+                logger.Info($"Received ACK PACKET for sn {pckt.Item1.seqNum}");
+
+                return Shared.Txp.AckType.Ack;
+            }
+
+            return Shared.Txp.AckType.Nack;
+        }
+        private void ListenForData()
+        {
+            IPEndPoint remoteEndPoint = new IPEndPoint(IPAddress.Loopback, 0000);
+
+            var pckt = ListenForPacket();
+            if (pckt == null)
+            {
+                logger.Warn("Something went wrong in listening for data");
+                throw new Exception("Received null response from ListenForPacket");
+            }
+
+            if (pckt.Item1.type != Shared.Txp.PacketType.Data)
+            {
+                logger.Warn("Received NON-DATA PACKET where data packet was expected");
+                throw new Exception("Received non-data packet where data packet was expected");
+            }
+
+            var header = pckt.Item1;
+            var receivedData = pckt.Item2;
+
+            // Log receipt of a data packet.
+            logger.Info($"Received DATA PACKET with sn {header.seqNum}");
+
+            // Calculate the length of the actual data received by subtracting the header size.
+            var lengthOfDataReceived = receivedData.Length - Shared.Txp.Constants.HEADER_SIZE;
+
+            // If the sequence number matches the expected incoming sequence number...
+            if (incomingSequenceNumber == header.seqNum)
+            {
+                // Add the packet's data to the buffer for reassembly.
+                packetBufferer.AddPacket(header.GetContainedData(receivedData));
+                // Increment expected incoming sequence number for the next packet.
+                incomingSequenceNumber++;
+
+                // Acknowledge receipt of the packet.
+                ackHandler.SendAck(header.seqNum, serverEndPoint);
+
+                // If this packet is marked as the final packet in a message...
+                if (header.finish == 1)
+                {
+                    // Raise the OnPacketReceived event with the assembled message.
+                    OnPacketReceived(packetBufferer.ConsumePacket());
+                    // Reset the incoming sequence number for a new message.
+                    incomingSequenceNumber = 0;
+                }
+            }
+            // If the received packet's sequence number is less than expected, it's out of order.
+            else if (incomingSequenceNumber > header.seqNum)
+            {
+                logger.Warn($"Received out of order packet with sn {header.seqNum}");
+                // Send a NACK in response to request retransmission.
+                ackHandler.SendNack(header.seqNum, serverEndPoint);
+            }
+            else
+            {
+                // Log receipt of a repeated packet.
+                logger.Warn($"Received a repeat packet that has already been processed with sn {header.seqNum}. Ignoring.");
+            }
+        }
+
 
         // Serializes the data into packets, each with a sequence number and potentially other metadata.
         private List<Tuple<uint, byte[]>> SerializeData(byte[] data)
