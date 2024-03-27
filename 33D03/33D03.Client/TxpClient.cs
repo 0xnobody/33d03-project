@@ -36,9 +36,6 @@ namespace _33D03.Client
         // Handles acknowledging received packets.
         private Shared.Txp.AckHandler ackHandler;
 
-        // A separate thread for listening to incoming data.
-        private Thread listenThread;
-
         // Buffers packets for reassembly.
         private Shared.Txp.PacketBufferer packetBufferer;
 
@@ -60,9 +57,6 @@ namespace _33D03.Client
 
             // Initialize the packet bufferer for handling packet fragments.
             packetBufferer = new Shared.Txp.PacketBufferer();
-
-            // Set up the listening thread.
-            listenThread = new Thread(ListenForData);
         }
 
         // Starts the listening thread for incoming data.
@@ -96,7 +90,7 @@ namespace _33D03.Client
                 client.Send(packet.Item2, packet.Item2.Length, serverEndPoint);
 
                 // Wait for an ACK or a timeout. If a NACK is received, resend.
-                if (ListenForAck() == Shared.Txp.AckType.Nack)
+                if (ackHandler.ListenForAck(ref serverEndPoint) == Shared.Txp.AckAction.Rebroadcast)
                 {
                     // If a NACK is received, resend the data with one less attempt.
                     Send(data, attempts - 1);
@@ -107,84 +101,11 @@ namespace _33D03.Client
             outgoingSequenceNumber = 0;
         }
 
-        private byte[]? ReceiveWithTimeout(ref IPEndPoint remoteEndPoint, TimeSpan timeout)
-        {
-            var asyncResult = client.BeginReceive(null, null);
-            asyncResult.AsyncWaitHandle.WaitOne(timeout);
-            if (asyncResult.IsCompleted)
-            {
-                IPEndPoint remoteEP = null;
-                byte[] receivedData = client.EndReceive(asyncResult, ref remoteEP);
-
-                return receivedData;
-            }
-            else
-            {
-                return null;
-            }
-        }
-        private Tuple<Shared.Txp.Header, byte[]>? ListenForPacket(TimeSpan? timeout = null)
-        {
-            // Block and wait to receive data, storing the sender's endpoint.
-            byte[]? receivedData;
-
-            if (timeout == null)
-            {
-                receivedData = client.Receive(ref serverEndPoint);
-            }
-            else
-            {
-                receivedData = ReceiveWithTimeout(ref serverEndPoint, timeout ?? TimeSpan.MinValue);
-            }
-
-            // Validate the minimum size of received data to ensure it contains a complete header.
-            if (receivedData.Length < Shared.Txp.Constants.HEADER_SIZE)
-            {
-                logger.Log(NLog.LogLevel.Error, "Received data is too small to be a packet");
-                throw new Exception("Received data is too small to be a packet");
-            }
-
-            // Deserialize the header from the received data to understand the packet's metadata.
-            var header = Shared.Txp.Header.FromBytes(receivedData);
-            // Validate the packet using the header information. Invalid packets are ignored.
-            if (!header.IsValid(receivedData))
-            {
-                logger.Warn($"Packet received from server is invalid (magic {header.magic:X}, csum {header.checksum:X})");
-                // If the packet is invalid, skip the rest of the loop and wait for the next packet.
-                return null;
-            }
-
-            return new Tuple<Shared.Txp.Header, byte[]>(header, receivedData);
-        }
-
-        private Shared.Txp.AckType ListenForAck()
-        {
-            var pckt = ListenForPacket(TimeSpan.FromMilliseconds(Shared.Txp.Constants.ACK_TIMEOUT_MS));
-            if (pckt == null)
-            {
-                logger.Warn("Timout occurred");
-                return Shared.Txp.AckType.Nack;
-            }
-
-            if (pckt.Item1.type == Shared.Txp.PacketType.Data)
-            {
-                logger.Warn("Received DATA PACKET where ACK/NACK was expected");
-            }
-
-            if (pckt.Item1.type == Shared.Txp.PacketType.ACK)
-            {
-                logger.Info($"Received ACK PACKET for sn {pckt.Item1.seqNum}");
-
-                return Shared.Txp.AckType.Ack;
-            }
-
-            return Shared.Txp.AckType.Nack;
-        }
         private void ListenForData()
         {
             IPEndPoint remoteEndPoint = new IPEndPoint(IPAddress.Loopback, 0000);
 
-            var pckt = ListenForPacket();
+            var pckt = Shared.Txp.Interface.ListenForPacket(client, ref remoteEndPoint);
             if (pckt == null)
             {
                 logger.Warn("Something went wrong in listening for data");
@@ -246,13 +167,6 @@ namespace _33D03.Client
         {
             // Call the static method to serialize the data, providing the conversationId and reference to outgoingSequenceNumber.
             return Shared.Txp.Interface.SerializeData(data, conversationId, ref outgoingSequenceNumber);
-        }
-
-        // Creates a single packet from the raw data, marking it as final or not.
-        private Tuple<uint, byte[]> CreatePacket(byte[] rawData, bool final)
-        {
-            // Call the static method to create a single packet from the raw data.
-            return Shared.Txp.Interface.CreatePacket(rawData, final, conversationId, ref outgoingSequenceNumber);
         }
     }
 }

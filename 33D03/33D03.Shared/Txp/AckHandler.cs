@@ -10,11 +10,6 @@ using NLog;
 
 namespace _33D03.Shared.Txp
 {
-    public enum AckType
-    {
-        Ack,
-        Nack
-    }
     public enum AckAction
     {
         Continue,
@@ -24,42 +19,12 @@ namespace _33D03.Shared.Txp
     {
         private UdpClient udpClient;
         private uint converstaionId;
-        private AckType lastAckType;
-        private AutoResetEvent ackReceivedEvent = new AutoResetEvent(false);
         private static NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
 
         public AckHandler(UdpClient udpClient, uint converstaionId)
         {
             this.udpClient = udpClient;
             this.converstaionId = converstaionId;
-        }
-
-        public void SpecifyAckReceived()
-        {
-            lastAckType = AckType.Ack;
-            ackReceivedEvent.Set();
-        }
-        public void SpecifyNackReceived()
-        {
-            lastAckType = AckType.Nack;
-            ackReceivedEvent.Set();
-        }
-        public AckAction WaitForAckOrTimeout()
-        {
-            if (ackReceivedEvent.WaitOne(TimeSpan.FromMilliseconds(Constants.ACK_TIMEOUT_MS)))
-            {
-                if (lastAckType == AckType.Ack)
-                {   //Console.WriteLine("Ack SENT");
-                    return AckAction.Continue;
-                    
-                }
-                else
-                {
-                    return AckAction.Rebroadcast;
-                }
-            }
-
-            return AckAction.Rebroadcast;
         }
 
         public void SendAck(uint sequenceNumber, IPEndPoint remoteEndPoint)
@@ -96,6 +61,28 @@ namespace _33D03.Shared.Txp
 
             byte[] ackPacket = header.ToBytes();
             udpClient.Send(ackPacket, ackPacket.Length, remoteEndPoint);
+        }
+
+        public Shared.Txp.AckAction ListenForAck(ref IPEndPoint remoteEndPoint)
+        {
+            var pckt = Shared.Txp.Interface.ListenForPacket(udpClient, ref remoteEndPoint, TimeSpan.FromMilliseconds(Shared.Txp.Constants.ACK_TIMEOUT_MS));
+            if (pckt == null)
+            {
+                logger.Warn("Timout occurred");
+                return Shared.Txp.AckAction.Rebroadcast;
+            }
+
+            if (pckt.Item1.type == Shared.Txp.PacketType.Data)
+            {
+                logger.Warn("Received data packet where ACK/NACK was expected");
+            }
+
+            if (pckt.Item1.type == Shared.Txp.PacketType.ACK)
+            {
+                return Shared.Txp.AckAction.Continue;
+            }
+
+            return Shared.Txp.AckAction.Rebroadcast;
         }
     }
 }
