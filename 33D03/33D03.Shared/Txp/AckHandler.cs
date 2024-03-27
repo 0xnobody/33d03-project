@@ -46,8 +46,9 @@ namespace _33D03.Shared.Txp
             if (ackReceivedEvent.WaitOne(TimeSpan.FromMilliseconds(Constants.ACK_TIMEOUT_MS)))
             {
                 if (lastAckType == AckType.Ack)
-                {
+                {   //Console.WriteLine("Ack SENT");
                     return AckAction.Continue;
+                    
                 }
                 else
                 {
@@ -72,6 +73,7 @@ namespace _33D03.Shared.Txp
 
             byte[] ackPacket = header.ToBytes();
             udpClient.Send(ackPacket, ackPacket.Length, remoteEndPoint);
+            //Console.WriteLine("ack RECIEVED");
         }
 
         public void SendNack(uint sequenceNumber, IPEndPoint remoteEndPoint)
