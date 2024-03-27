@@ -14,6 +14,23 @@ namespace _33D03.Shared.Pip // Declaring a namespace for organizing related code
         Guid voteId; // Declaring a field of type Guid.
         ushort response; // Declaring a field of type ushort.
 
+
+        public PacketBroadcastVoteResult(Header hder, Guid guid, ushort ans)
+        {
+            header = hder;
+            voteId = guid;
+            response = ans;
+        }
+        public ushort GetResponse()
+        {
+            return response;
+        }
+
+        public Guid GetGuid()
+        {
+            return voteId;
+        }
+
         public byte[] ToBytes() // Defining a method to convert the struct to a byte array.
         {
             return Serialization.StructureToByteArray(this); // Returning the byte array representation of the struct.

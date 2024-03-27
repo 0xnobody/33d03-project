@@ -27,6 +27,11 @@ namespace _33D03.Shared.Pip // Declaring a namespace for organizing related code
             questionLength = QuestionLength;
         }
 
+        public Guid GetGuid()
+        {
+            return voteGuid;
+        }
+
         public byte[] ToBytes() // Defining a method to convert the struct to a byte array.
         {
             return Serialization.StructureToByteArray(this); // Returning the byte array representation of the struct.

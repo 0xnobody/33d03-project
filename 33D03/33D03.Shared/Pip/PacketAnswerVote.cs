@@ -26,6 +26,11 @@ namespace _33D03.Shared.Pip
             get { return header; }
         }
 
+        public Guid GetGuid()
+        {
+            return voteId;
+        }
+
         public ushort GetResponse()
         {
             return response;

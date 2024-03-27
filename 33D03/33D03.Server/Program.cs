@@ -35,27 +35,44 @@ namespace _33D03.Server
                 txpServer.OnPacketReceived += (clientState, data) =>
                 {
                     var receivedHeader = Header.FromBytes(data);
-
+                    int vote_counter = 0;
+                    int unsatcount = 0;
+                    int satcount = 0;
+                    int connectedclients = txpServer.conversations.Count;
                     logger.Trace($"Received packet from CID {clientState.ConversationId} of type {receivedHeader.type}");
 
                     if (receivedHeader.type == PacketType.Vote_Request_Vote_C2S)
                     {
-                        (PacketRequestVote recievedpacktestvote, string question) = PacketRequestVote.Deserialize(data);
+                        PipServer.PipServerBroadcastQuestion(txpServer, data);
 
-                        var sendQuestion = question;
-                        var questionlength = (uint)question.Length;
-                        var header = new Header(PacketType.Vote_Broadcast_Vote_S2C);
-                        Guid voteGuid = Guid.NewGuid();
-                        var Vote_init_packet = new PacketBroadcastVote(header, voteGuid, questionlength);
-                        var voteinitbytes = Vote_init_packet.Serialize(question);
-                        txpServer.Send(voteinitbytes, clientState);
-                        logger.Info("Client initiate vote requst with SMTLIB question" + question);
                     }
                     else if (receivedHeader.type == PacketType.Vote_Answer_Vote_C2S)
                     {
+                        PacketAnswerVote voteresultpacket = PacketAnswerVote.FromBytes(data);
                         logger.Info("Client answered vote");
+                        vote_counter += 1;
+                        ushort final = 0;
+                        if (voteresultpacket.GetResponse() == 1) satcount++;
+                        else if (voteresultpacket.GetResponse() == 0) unsatcount++;
+
+                        if (vote_counter == txpServer.conversations.Count)
+                        {
+                            final = PipServer.OrganizeData(txpServer, vote_counter, unsatcount, satcount);
+                            Guid tempguid = voteresultpacket.GetGuid();
+                            Header temphdr = new Header(PacketType.Vote_Broadcast_Vote_Result_S2C);
+                            PacketBroadcastVoteResult ResultS2Cpacket = new PacketBroadcastVoteResult(temphdr, tempguid, final);
+                            byte[] finaldata = ResultS2Cpacket.ToBytes();
+                            foreach (var conversationEntry in txpServer.conversations)
+                            {
+                                var conversation = conversationEntry.Value;
+                                txpServer.Send(finaldata, conversation);
+                            }
+                        }
+                        logger.Info($"final packet result for guid {voteresultpacket.GetGuid()} is {final}");
+
                     }
                 };
+
 
                 /*// Logs the receipt of a packet using Trace level, including the client's ID and the packet data as a hex string.
                 logger.Trace($"Received packet from CID {clientState.ConversationId} with data: {}");

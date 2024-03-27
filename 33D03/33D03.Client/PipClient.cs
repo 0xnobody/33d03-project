@@ -55,10 +55,10 @@ namespace _33D03.Client
             logger.Info("Client initiate vote requst with SMTLIB question" + question);
         }
 
-        public static void ClientAnswerVote(TxpClient client, string question)
+        public static void ClientAnswerVote(TxpClient client, string question, Guid voteID)
         {
             var header = new Header(PacketType.Vote_Answer_Vote_C2S);
-            Guid voteGuid = Guid.NewGuid();
+            Guid voteGuid = voteID;
             uint result = SMTChecker(question);
             var Client_Answer_Packet = new PacketAnswerVote(header, voteGuid, (ushort)result);
             if (Client_Answer_Packet.GetResponse() == 1)
@@ -72,6 +72,7 @@ namespace _33D03.Client
             else Console.WriteLine("Syntax Error");
             byte[] answerinitbytes = Client_Answer_Packet.Serialize();
             client.Send(answerinitbytes);
+            logger.Info("Client respond with " + Client_Answer_Packet.GetResponse() + "vote ID: " +voteGuid);
         }
 
         public static ushort SMTChecker(string question)
