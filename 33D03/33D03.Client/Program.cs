@@ -14,6 +14,40 @@ namespace _33D03.Client
     {
         private static NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
 
+        static void WriteLinesFromPreviousLine(string inputFilePath, string outputFilePath)
+        {
+            // Check if input file exists
+            if (File.Exists(inputFilePath))
+            {
+                // Read lines from input file and write to output file
+                using (StreamReader reader = new StreamReader(inputFilePath))
+                using (StreamWriter writer = new StreamWriter(outputFilePath))
+                {
+                    string line;
+                    string previousLine = null;
+
+                    while ((line = reader.ReadLine()) != null)
+                    {
+                        if (previousLine != null)
+                        {
+                            writer.WriteLine(previousLine);
+                        }
+                        previousLine = line;
+                    }
+
+                    // Write the last line from the input file
+                    if (previousLine != null)
+                    {
+                        writer.WriteLine(previousLine);
+                    }
+                }
+            }
+            else
+            {
+                Console.WriteLine("Input file does not exist.");
+            }
+        }
+      
         private static void Main(string[] args)
         {
             try
@@ -70,16 +104,7 @@ namespace _33D03.Client
                     }
                 };
 
-                string inputstr = "null";
-                while (inputstr != "Exit")
-                {
-                    inputstr = Console.ReadLine();
-                    if (inputstr == "vote")
-                    {
-                        PipClient.VoteInit(client);
-                        break;
-                    }
-                }
+                PipClient.VoteInit(client);
 
                 client.Start();
 
