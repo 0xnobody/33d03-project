@@ -62,6 +62,7 @@ namespace _33D03.Server
         public TxpServer(int port)
         {
             server = new UdpClient(port); // Bind the server to the specified port.
+            server.DontFragment = true;
         }
 
         // Starts the server's listening thread, beginning packet reception.

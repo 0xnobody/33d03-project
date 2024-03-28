@@ -46,6 +46,7 @@ namespace _33D03.Client
         {
             // Initialize the UDP client to bind to any available port.
             client = new UdpClient(0);
+            client.DontFragment = true;
 
             try
             {
