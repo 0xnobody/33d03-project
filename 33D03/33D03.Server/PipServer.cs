@@ -4,6 +4,9 @@ using System.Text;
 using _33D03.Server;
 using System.Security.Cryptography.X509Certificates;
 using _33D03.Shared.Pip;
+using System.ComponentModel;
+using System.Runtime.Versioning;
+using NLog.LayoutRenderers;
 
 namespace _33D03.Server
 {
@@ -18,15 +21,31 @@ namespace _33D03.Server
             servervoteguid = inputGuid;
             result = rest;
         }
-        public Guid GetGuid(){
+        public Guid GetGuid()
+        {
             return servervoteguid;
         }
-        public ushort GetResult(){
+        public ushort GetResult()
+        {
             return result;
         }
     }
 
-    
+    public struct ServerListofClients
+    {
+        public uint convoid;
+        public int numFeatures;
+        public Feature[] features;
+
+        public ServerListofClients(uint id, int num, Feature[] feature)
+        {
+            convoid = id;
+            numFeatures = num;
+            features = feature;
+        }
+    }
+
+
     public static class PipServer
     {
 
@@ -51,6 +70,30 @@ namespace _33D03.Server
         struct questionID
         {
 
+        }
+
+        static void AddMoreClients(List<ServerListofClients> clientsList, uint convoid, int numFeatures, Feature[] features)
+        {
+            clientsList.Add(new ServerListofClients(convoid, numFeatures, features));
+        }
+
+        internal static void HelloRecieved(TxpServer server, List<ServerListofClients> clientsList, byte[] data, uint convoid)
+        {
+            Header header = PacketHello.FromBytes(data);
+            (PacketHello structtest, Feature[] features) = PacketHello.Deserialize(data);
+            AddMoreClients(clientsList, convoid, structtest.numFeatures, features);
+            Console.WriteLine($"ID: {convoid}, NumFeatures: {structtest.numFeatures}, features: {String.Join(", ", features)}");
+            Console.WriteLine();
+            Console.WriteLine();
+            Console.WriteLine();
+            Console.WriteLine("List of Packets:");
+            foreach (var ServerListofClients in clientsList)
+            {
+                Console.WriteLine($"ID: {ServerListofClients.convoid}, NumFeatures: {ServerListofClients.numFeatures}, features: {String.Join(", ", ServerListofClients.features)}");
+            }
+            Console.WriteLine();
+            Console.WriteLine();
+            Console.WriteLine();
         }
 
         internal static ushort OrganizeData(TxpServer server, int satcount, int unsatcount, int total)

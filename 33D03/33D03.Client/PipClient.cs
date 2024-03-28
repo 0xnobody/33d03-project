@@ -43,6 +43,17 @@ namespace _33D03.Client
             return smtBuilder.ToString();
         }
 
+        public static void SendHello(TxpClient client)
+        {
+            var header = new Header(PacketType.Hello_C2S);
+            Feature[] features = { Feature.SMTVerificationFeature, Feature.TestFeatrue1, Feature.TestFeatrue2 };
+            var hellopacket = new PacketHello(header);
+            hellopacket.numFeatures = features.Length;
+            var hellosendpacket = hellopacket.Serialize(features);
+            client.Send(hellosendpacket);
+            logger.Info($"Client Sent hello to server with features {string.Join(", ", features)}");
+        }
+
         public static void VoteInit(TxpClient client)
         {
             var question = GenerateSMTLIBString();
@@ -61,7 +72,7 @@ namespace _33D03.Client
             Guid voteGuid = voteID;
             uint result = SMTChecker(question);
             Guid newguid = Guid.NewGuid();
-            var Client_Answer_Packet = new PacketAnswerVote(header, voteGuid,newguid, (ushort)result);
+            var Client_Answer_Packet = new PacketAnswerVote(header, voteGuid, newguid, (ushort)result);
             if (Client_Answer_Packet.GetResponse() == 1)
             {
                 Console.WriteLine("Satisfied");
@@ -73,8 +84,8 @@ namespace _33D03.Client
             else Console.WriteLine("Syntax Error");
             byte[] answerinitbytes = Client_Answer_Packet.Serialize();
             client.Send(answerinitbytes);
-            Console.WriteLine("NEW GUID FOR THIS CLIENT RESPONSE IS "+ Client_Answer_Packet.GetNewGuid());
-            logger.Info("Client respond with " + Client_Answer_Packet.GetResponse() + "vote ID: " +voteGuid);
+            Console.WriteLine("NEW GUID FOR THIS CLIENT RESPONSE IS " + Client_Answer_Packet.GetNewGuid());
+            logger.Info("Client respond with " + Client_Answer_Packet.GetResponse() + "vote ID: " + voteGuid);
         }
 
         public static ushort SMTChecker(string question)

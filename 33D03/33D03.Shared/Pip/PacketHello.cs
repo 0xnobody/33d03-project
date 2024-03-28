@@ -1,6 +1,7 @@
 ﻿using System; // Importing the System namespace which contains fundamental classes and base classes that define commonly-used value and reference data types, events and event handlers, interfaces, attributes, and processing exceptions.
 using System.Collections.Generic; // Importing the namespace for generic collections.
 using System.Linq; // Importing the namespace for Language-Integrated Query (LINQ), which provides methods for querying and manipulating data.
+using System.Net;
 using System.Runtime.InteropServices; // Importing the namespace for interaction with COM objects, services, and unmanaged code.
 using System.Text; // Importing the namespace for classes representing ASCII and Unicode character encodings.
 using System.Threading.Tasks; // Importing the namespace for types that simplify working with tasks, including the ability to execute multiple tasks concurrently.
@@ -11,6 +12,8 @@ namespace _33D03.Shared.Pip // Declaring a namespace for organizing related code
     public enum Feature : ushort // Declaring a public enumeration named Feature, with underlying type ushort.
     {
         SMTVerificationFeature = 0, // Defining an enumeration member named SMTVerificationFeature with value 0.
+        TestFeatrue1 = 1,
+        TestFeatrue2 = 2,
     }
 
 
@@ -20,7 +23,33 @@ namespace _33D03.Shared.Pip // Declaring a namespace for organizing related code
     {
         Header header; // Declaring a field of type Header.
         uint version; // Declaring a field of type uint.
-        ushort numFeatures; // Declaring a field of type ushort.
+        public int numFeatures;
+
+        public PacketHello(Header hdr)
+        {
+            header = hdr;
+            version = Constants.VERSION;
+            numFeatures = 0;
+        }
+
+        public Header HeaderInfo
+        {
+            get { return header; }
+        }
+
+        public uint GetVersion()
+        {
+            return version;
+        }
+
+        //public Feature[] GetFeaturesArray(){
+        //return feature;
+        //}
+
+        public int GetNumFeatures()
+        {
+            return numFeatures;
+        }
 
         public byte[] ToBytes() // Defining a method to convert the struct to a byte array.
         {
@@ -49,7 +78,37 @@ namespace _33D03.Shared.Pip // Declaring a namespace for organizing related code
             return completedPacketBytes; // Returning the completed byte array.
         }
 
-        public Feature[] GetFeatures(byte[] fullPacketData) // Defining a method to extract the features array from a serialized PacketHello.
+        public static (PacketHello, Feature[]) Deserialize(byte[] data)
+        {
+            // Extract the PacketHello structure
+            int sizeOfPacketHello = Marshal.SizeOf(typeof(PacketHello));
+            IntPtr ptr = Marshal.AllocHGlobal(sizeOfPacketHello);
+            PacketHello packetHello;
+            try
+            {
+                Marshal.Copy(data, 0, ptr, sizeOfPacketHello);
+                packetHello = (PacketHello)Marshal.PtrToStructure(ptr, typeof(PacketHello));
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(ptr);
+            }
+            // Assuming you know how many features there are (e.g., from packetHello or a fixed size)
+            // For demonstration, let's say it's a fixed number or extracted from packetHello
+            int numFeatures = packetHello.numFeatures;
+            Feature[] features = new Feature[numFeatures];
+
+            int featuresStartIndex = sizeOfPacketHello;
+            for (int i = 0; i < numFeatures; i++)
+            {
+                int featurePos = featuresStartIndex + (i * sizeof(ushort));
+                features[i] = (Feature)BitConverter.ToUInt16(data, featurePos);
+            }
+            return (packetHello, features);
+        }
+
+
+        public static Feature[] GetFeatures(byte[] fullPacketData, int numFeatures, Header header) // Defining a method to extract the features array from a serialized PacketHello.
         {
             Feature[] features = new Feature[numFeatures]; // Creating a new features array.
             for (int i = 0; i < numFeatures; i++) // Looping over each feature.

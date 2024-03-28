@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using _33D03.Shared;
 using _33D03.Shared.Pip;
 using System.Data.SqlTypes;
+using System.Formats.Asn1;
 
 namespace _33D03.Server
 {
@@ -16,7 +17,6 @@ namespace _33D03.Server
     {
         // Creates a logger instance for this class using NLog.
         private static NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
-
 
 
         private static void Main(string[] args)
@@ -32,6 +32,7 @@ namespace _33D03.Server
 
                 // Initialize a new TxpServer instance listening on port 1151.
                 TxpServer txpServer = new TxpServer(24588);
+                List<ServerListofClients> ServerclientsList = new List<ServerListofClients>();
 
                 // Subscribe to the OnPacketReceived event with an anonymous method to handle incoming packets.
 
@@ -46,8 +47,11 @@ namespace _33D03.Server
 
                     int connectedclients = txpServer.conversations.Count;
                     logger.Trace($"Received packet from CID {clientState.ConversationId} of type {receivedHeader.type}");
-
-                    if (receivedHeader.type == PacketType.Vote_Request_Vote_C2S)
+                    if (receivedHeader.type == PacketType.Hello_C2S)
+                    {
+                        PipServer.HelloRecieved(txpServer,ServerclientsList, data, clientState.ConversationId);
+                    }
+                    else if (receivedHeader.type == PacketType.Vote_Request_Vote_C2S)
                     {
                         vote_counter = 0;
                         unsatcount = 0;
@@ -121,6 +125,8 @@ namespace _33D03.Server
                 }*/
 
                 // Starts the server to begin listening for incoming connections and packets.
+
+
                 txpServer.Start();
 
                 // Logs an Info level message indicating the server has started.
@@ -135,5 +141,7 @@ namespace _33D03.Server
             // Puts the main thread to sleep indefinitely, preventing the program from exiting.
             Thread.Sleep(-1);
         }
+
     }
+
 }
