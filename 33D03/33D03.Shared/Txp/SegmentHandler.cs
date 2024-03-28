@@ -83,7 +83,7 @@ namespace _33D03.Shared.Txp
 
             udpClient.Send(OutgoingSegments[seqNum], endPoint);
 
-            // If the segment is not acknowledged within a timeout, send a NACK.
+            // If the segment is not acknowledged within a timeout, resend it
             //
             uint packetIndex = OutgoingPacketIndex;
             Task.Delay(Shared.Txp.Constants.ACK_TIMEOUT_MS).ContinueWith((Task task) =>
@@ -93,14 +93,14 @@ namespace _33D03.Shared.Txp
                 // We might have a race condition with OutgoingPacketIndex here.
                 //
 
-                // If the packet index has changed, we have moved on to the next packet and should not send a NACK.
+                // If the packet index has changed, we have moved on to the next packet and should not resend it.
                 // This would occur if the client resent the previous packet after we moved on to the next packet.
                 //
                 if (packetIndex == OutgoingPacketIndex)
                 {
                     if (!IncomingSegmentAcks.Contains(seqNum))
                     {
-                        SendNack(seqNum, pcktNum, endPoint);
+                        sendSegment(seqNum, pcktNum, endPoint);
                     }
                 }
             });
@@ -131,20 +131,19 @@ namespace _33D03.Shared.Txp
         /// <param name="endPoint"></param>
         public void SendOrQueuePacket(byte[] data, IPEndPoint endPoint)
         {
-            PacketQueueMutex.WaitOne();
-
-            if (ReadyForNextOutgoingPacket)
+            lock (PacketQueueMutex)
             {
-                sendPacket(data, endPoint);
-            }
-            else
-            {
-                OutgoingPacketQueue.Enqueue(data);
-            }
+                if (ReadyForNextOutgoingPacket)
+                {
+                    sendPacket(data, endPoint);
+                }
+                else
+                {
+                    OutgoingPacketQueue.Enqueue(data);
+                }
 
-            ReadyForNextOutgoingPacket = false;
-
-            PacketQueueMutex.ReleaseMutex();
+                ReadyForNextOutgoingPacket = false;
+            }
         }
 
         /// <summary>
@@ -209,37 +208,37 @@ namespace _33D03.Shared.Txp
         /// <param name="endPoint"></param>
         public void SendNextPacketIfReady(IPEndPoint endPoint)
         {
-            PacketQueueMutex.WaitOne();
-
-            // If we have not received all ACKs for the current packet, we should not send the next packet.
-            //
-            if (!AllAcksReceived())
+            lock (PacketQueueMutex)
             {
-                return;
+                // If we have not received all ACKs for the current packet, we should not send the next packet.
+                //
+                if (!AllAcksReceived())
+                {
+                    return;
+                }
+
+                logger.Info($"All ACKs received for pckt num {OutgoingPacketIndex}, sending next packet");
+
+                // Reset the outgoing packet state.
+                //
+                OutgoingPacketIndex++;
+                NumberOfSegmentsToAck = 0;
+                OutgoingSegments.Clear();
+                IncomingSegmentAcks.Clear();
+
+                // If there are packets in the queue, send the next packet.
+                // Otherwise, mark the handler as ready to send the next packet.
+                //
+                if (OutgoingPacketQueue.Count > 0)
+                {
+                    sendPacket(OutgoingPacketQueue.Dequeue(), endPoint);
+                }
+                else
+                {
+                    ReadyForNextOutgoingPacket = true;
+                }
+
             }
-
-            logger.Info($"All ACKs received for pckt num {OutgoingPacketIndex}, sending next packet");
-
-            // Reset the outgoing packet state.
-            //
-            OutgoingPacketIndex++;
-            NumberOfSegmentsToAck = 0;
-            OutgoingSegments.Clear();
-            IncomingSegmentAcks.Clear();
-
-            // If there are packets in the queue, send the next packet.
-            // Otherwise, mark the handler as ready to send the next packet.
-            //
-            if (OutgoingPacketQueue.Count > 0)
-            {
-                sendPacket(OutgoingPacketQueue.Dequeue(), endPoint);
-            }
-            else
-            {
-                ReadyForNextOutgoingPacket = true;
-            }
-
-            PacketQueueMutex.WaitOne();
         }
 
         /// <summary>

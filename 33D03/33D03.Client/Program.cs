@@ -79,7 +79,7 @@ namespace _33D03.Client
                 client.Start();
 
 
-                //PipClient.SendHello(client);
+                PipClient.SendHello(client);
                 PipClient.VoteInit(client);
 
 
