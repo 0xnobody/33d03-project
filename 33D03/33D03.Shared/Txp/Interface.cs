@@ -13,7 +13,7 @@ namespace _33D03.Shared.Txp
     {
         private static NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
 
-        public static List<Tuple<uint, byte[]>> SerializeData(byte[] data, uint conversationId, ref uint sequenceNum)
+        public static Dictionary<uint, byte[]> SerializeData(byte[] data, uint pcktNum, uint conversationId, ref uint sequenceNum)
         {
             var chunkSize = Shared.Txp.Constants.DATA_SIZE;
 
@@ -26,17 +26,18 @@ namespace _33D03.Shared.Txp
                 chunks.Add(chunk);
             }
 
-            List<Tuple<uint, byte[]>> outgoingPackets = new List<Tuple<uint, byte[]>>();
+            Dictionary<uint, byte[]> outgoingPackets = new Dictionary<uint, byte[]>();
 
             for (int i = 0; i < chunks.Count; i++)
             {
-                outgoingPackets.Add(CreatePacket(chunks[i], i == chunks.Count - 1, conversationId, ref sequenceNum));
+                var pckt = CreatePacket(chunks[i], pcktNum, i == chunks.Count - 1, conversationId, ref sequenceNum);
+                outgoingPackets.Add(pckt.Item1, pckt.Item2);
             }
 
             return outgoingPackets;
         }
 
-        public static Tuple<uint, byte[]> CreatePacket(byte[] rawData, bool final, uint conversationId, ref uint sequenceNum)
+        public static Tuple<uint, byte[]> CreatePacket(byte[] rawData, uint pcktNum, bool final, uint conversationId, ref uint sequenceNum)
         {
             if (rawData.Length > Shared.Txp.Constants.DATA_SIZE)
             {
@@ -49,6 +50,7 @@ namespace _33D03.Shared.Txp
                 checksum = 0,
                 convId = conversationId,
                 seqNum = sequenceNum++,
+                pcktNum = pcktNum,
                 finish = final ? (ushort)1 : (ushort)0,
                 type = Shared.Txp.PacketType.Data
             };
@@ -110,9 +112,6 @@ namespace _33D03.Shared.Txp
                 // If the packet is invalid, skip the rest of the loop and wait for the next packet.
                 return null;
             }
-
-            // Log a message indicating a valid packet has been received.
-            logger.Trace($"Received valid packet from of type {Enum.GetName(typeof(Shared.Txp.PacketType), header.type)}");
 
             return new Tuple<Shared.Txp.Header, byte[]>(header, receivedData);
         }

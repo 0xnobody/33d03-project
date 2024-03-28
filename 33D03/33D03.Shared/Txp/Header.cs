@@ -14,13 +14,14 @@ namespace _33D03.Shared.Txp
         NACK = 2,
     }
 
-    [StructLayout(LayoutKind.Sequential, Pack = 1, Size = 20)]
+    [StructLayout(LayoutKind.Sequential, Pack = 1, Size = 24)]
     public struct Header
     {
         public uint magic;
         public uint checksum;
         public uint convId;
         public uint seqNum;
+        public uint pcktNum;
         public ushort finish;
         public PacketType type;
 

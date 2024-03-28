@@ -48,15 +48,6 @@ namespace _33D03.Client
             }
         }
 
-
-
-
-
-
-
-
-
-
         private static void Main(string[] args)
         {
             try
@@ -106,16 +97,7 @@ namespace _33D03.Client
                     }
                 };
 
-                string inputstr = "null";
-                while (inputstr != "Exit")
-                {
-                    inputstr = Console.ReadLine();
-                    if (inputstr == "vote")
-                    {
-                        PipClient.VoteInit(client);
-                        break;
-                    }
-                }
+                PipClient.VoteInit(client);
 
                 client.Start();
 
