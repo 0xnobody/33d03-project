@@ -14,6 +14,7 @@ namespace _33D03.Client
 {
     // Delegate for handling received packets.
     public delegate void PacketReceived(byte[] data);
+    public delegate void ServerDisconnected();
 
     public class TxpClient
     {
@@ -31,8 +32,12 @@ namespace _33D03.Client
         // Buffers packets for reassembly.
         private Shared.Txp.SegmentHandler segmentHandler;
 
+        private Shared.Txp.SynHandler synHandler;
+
         // Event triggered upon receiving a complete packet.
         public event PacketReceived OnPacketReceived;
+
+        public event ServerDisconnected OnServerDisconnected;
 
         public bool IsRunning { get; private set; }
 
@@ -48,16 +53,29 @@ namespace _33D03.Client
 
             // Initialize the packet bufferer for handling packet fragments.
             segmentHandler = new Shared.Txp.SegmentHandler(client, conversationId);
+
+            synHandler = new Shared.Txp.SynHandler(client, serverEndPoint, conversationId);
+
+            synHandler.OnMaxSYNAttemptsReached += () =>
+            {
+                logger.Warn("Max SYN attempts reached, server is likely down.");
+                OnServerDisconnected?.Invoke();
+                Close();
+            };
         }
 
         // Starts the listening thread for incoming data.
         public void Start()
         {
             IsRunning = true;
-            while (IsRunning)
+
+            new Thread(() =>
             {
-                ListenForData();
-            }
+                while (IsRunning)
+                {
+                    ListenForData();
+                }
+            }).Start();
         }
         
         public void Close()
@@ -90,6 +108,8 @@ namespace _33D03.Client
                 throw new Exception("Received null response from ListenForPacket");
             }
 
+            synHandler.RefreshSYNTimeout(remoteEndPoint);
+
             var header = pckt.Item1;
             var receivedData = pckt.Item2;
 
@@ -111,6 +131,16 @@ namespace _33D03.Client
                     break;
                 case Shared.Txp.PacketType.NACK:
                     segmentHandler.NackReceived(header.seqNum, header.pcktNum, remoteEndPoint);
+                    break;
+                case Shared.Txp.PacketType.SYN:
+                    synHandler.RespondToSYN(remoteEndPoint);
+                    break;
+                case Shared.Txp.PacketType.SYN_ACK:
+                    synHandler.SYNACKReceived();
+                    break;
+                case Shared.Txp.PacketType.RESET:
+                    OnServerDisconnected();
+                    Close();
                     break;
                 default:
                     logger.Warn("Received unknown packet type");

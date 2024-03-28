@@ -13,6 +13,7 @@ using _33D03.Shared.Txp;
 namespace _33D03.Server
 {
     delegate void PacketReceived(TxpClientConversation clientConversation, byte[] data);
+    delegate void ClientDisconnected(TxpClientConversation clientConversation);
 
     // Manages conversation state with a client, including sequence numbers and the last known endpoint.
     internal class TxpClientConversation
@@ -24,12 +25,15 @@ namespace _33D03.Server
 
         public SegmentHandler SegmentHandler;
 
+        public SynHandler SynHandler;
+
         // Initializes a new conversation with a client.
         public TxpClientConversation(UdpClient client, uint conversationId, IPEndPoint initialEndPoint)
         {
             ConversationId = conversationId;
             LastEndPoint = initialEndPoint; // Store the client's endpoint.
             SegmentHandler = new SegmentHandler(client, conversationId);
+            SynHandler = new SynHandler(client, initialEndPoint, conversationId);
         }
     }
 
@@ -49,6 +53,9 @@ namespace _33D03.Server
 
         // Event triggered when a complete data packet is received.
         public event PacketReceived OnPacketReceived;
+
+        public event ClientDisconnected OnClientDisconnected;
+
         public bool IsRunning { get; private set; }
 
         // Initializes the server to listen on the specified port.
@@ -61,17 +68,18 @@ namespace _33D03.Server
         public void Start()
         {
             IsRunning = true;
-            while (IsRunning)
+
+            new Thread(() =>
             {
-                ListenForData();
-            }
+                while (IsRunning)
+                {
+                    ListenForData();
+                }
+            }).Start();
         }
 
         public void Stop()
         {
-            //
-            // TODO: send RESET message to all clients
-            //
             IsRunning = false;
             server.Close();
         }
@@ -97,6 +105,13 @@ namespace _33D03.Server
                 Send(data, conv);
             }
         }
+
+        private void disconnectClient(TxpClientConversation conversation)
+        {
+            OnClientDisconnected(conversation);
+            conversations.Remove(conversation.ConversationId);
+        }
+
         private void ListenForData()
         {
             IPEndPoint remoteEndPoint = new IPEndPoint(IPAddress.Loopback, 0000);
@@ -114,7 +129,15 @@ namespace _33D03.Server
             // If this is the first packet from a new conversation, create a new conversation object.
             if (!conversations.ContainsKey(header.convId))
             {
-                conversations.Add(header.convId, new TxpClientConversation(server, header.convId, remoteEndPoint));
+                var conv = new TxpClientConversation(server, header.convId, remoteEndPoint);
+
+                conv.SynHandler.OnMaxSYNAttemptsReached += () =>
+                {
+                    logger.Warn($"Client {remoteEndPoint} did not respond to SYN-ACK, purging conversation ID {conv.ConversationId}");
+                    disconnectClient(conv);
+                };
+
+                conversations.Add(header.convId, conv);
             }
 
             // Retrieve the conversation object associated with this packet.
@@ -122,6 +145,8 @@ namespace _33D03.Server
 
             // Update the conversation's last known endpoint. This is important if the client's network address changes.
             conversation.LastEndPoint = remoteEndPoint;
+
+            conversation.SynHandler.RefreshSYNTimeout(remoteEndPoint);
 
             switch (header.type)
             {
@@ -144,8 +169,15 @@ namespace _33D03.Server
                 case Shared.Txp.PacketType.NACK:
                     conversation.SegmentHandler.NackReceived(header.seqNum, header.pcktNum, remoteEndPoint);
                     break;
+                case Shared.Txp.PacketType.SYN:
+                    conversation.SynHandler.RespondToSYN(remoteEndPoint);
+                    break;
+                case Shared.Txp.PacketType.SYN_ACK:
+                    conversation.SynHandler.SYNACKReceived();
+                    break;
                 case Shared.Txp.PacketType.RESET:
-                    // TODO: implement
+                    OnClientDisconnected(conversation);
+                    conversations.Remove(header.convId);
                     break;
                 default:
                     logger.Warn("Received unknown packet type");
