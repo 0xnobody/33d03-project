@@ -114,7 +114,7 @@ namespace _33D03.Server
 
         private void ListenForData()
         {
-            IPEndPoint remoteEndPoint = new IPEndPoint(IPAddress.Loopback, 0000);
+            IPEndPoint remoteEndPoint = new IPEndPoint(IPAddress.Any, 0);
 
             var pckt = Shared.Txp.Interface.ListenForPacket(server, ref remoteEndPoint);
             if (pckt == null)

@@ -42,12 +42,28 @@ namespace _33D03.Client
         public bool IsRunning { get; private set; }
 
         // Constructor: initializes client, server endpoint, conversation ID, and starts listening thread.
-        public TxpClient(string serverIp, int serverPort)
+        public TxpClient(string endpoint, int serverPort)
         {
             // Initialize the UDP client to bind to any available port.
             client = new UdpClient(0);
-            // Parse the server IP and port into an IPEndPoint.
-            serverEndPoint = new IPEndPoint(IPAddress.Parse(serverIp), serverPort);
+
+            try
+            {
+                // Parse the server IP and port into an IPEndPoint.
+                serverEndPoint = new IPEndPoint(IPAddress.Parse(endpoint), serverPort);
+            }
+            catch (FormatException ex)
+            {
+                var addresses = Dns.GetHostAddresses(endpoint);
+
+                if (!addresses.Any())
+                {
+                    throw new Exception("Invalid server IP address or hostname.");
+                }
+
+                serverEndPoint = new IPEndPoint(addresses[0], serverPort);
+            }
+
             // Generate a random conversation ID.
             conversationId = (uint)new Random(DateTime.Now.Millisecond).Next(); // Better randomness needed.
 

@@ -31,7 +31,7 @@ namespace _33D03.Server
                 });
 
                 // Initialize a new TxpServer instance listening on port 1151.
-                TxpServer txpServer = new TxpServer(1151);
+                TxpServer txpServer = new TxpServer(24588);
 
                 // Subscribe to the OnPacketReceived event with an anonymous method to handle incoming packets.
 
