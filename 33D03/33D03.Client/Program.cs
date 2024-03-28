@@ -47,7 +47,7 @@ namespace _33D03.Client
                 Console.WriteLine("Input file does not exist.");
             }
         }
-
+      
         private static void Main(string[] args)
         {
             try
@@ -59,7 +59,7 @@ namespace _33D03.Client
                 });
 
                 TxpClient client = new TxpClient("127.0.0.1", 1151);
-
+                string filePath = @$"C:\PipList\client{Guid.NewGuid()}_output.txt";
                 client.OnPacketReceived += (data) =>
                 {
                     var pipHeader = Header.FromBytes(data);
@@ -77,6 +77,13 @@ namespace _33D03.Client
                             {
                                 Console.WriteLine("Solving for smtlib question: " + question);
                                 PipClient.ClientAnswerVote(client, question, voteID);
+                                DateTime currentTimes = DateTime.Now;
+                                string timedatas = currentTimes + " ";
+                                using (StreamWriter writer = new StreamWriter(filePath, true))
+                                {
+                                    writer.Write(timedatas + " " + question + " ");
+                                    Console.WriteLine("wrote to " + filePath);
+                                }
                             }
                             break;
 
@@ -84,11 +91,11 @@ namespace _33D03.Client
                             logger.Trace($"Received Reuslt packet from server with dat: {PacketBroadcastVoteResult.FromBytes(data)}");
                             PacketBroadcastVoteResult voteResult = PacketBroadcastVoteResult.FromBytes(data);
                             DateTime currentTime = DateTime.Now;
-                            string timedata = currentTime + " " + voteResult.GetResponse();
-                            string filePath = @"C:\PipList\client_output.txt";
-                            using (StreamWriter writer = new StreamWriter(filePath, false))
+
+
+                            using (StreamWriter writer = new StreamWriter(filePath, true))
                             {
-                                writer.WriteLine(timedata);
+                                writer.WriteLine(voteResult.GetResponse() + " " + voteResult.GetGuid());
                                 Console.WriteLine("wrote to " + filePath);
                             }
 

@@ -7,6 +7,26 @@ using _33D03.Shared.Pip;
 
 namespace _33D03.Server
 {
+
+    public struct ServerVoteLog
+    {
+        Guid servervoteguid;
+        ushort result;
+
+        public ServerVoteLog(Guid inputGuid, ushort rest)
+        {
+            servervoteguid = inputGuid;
+            result = rest;
+        }
+        public Guid GetGuid(){
+            return servervoteguid;
+        }
+        public ushort GetResult(){
+            return result;
+        }
+    }
+
+    
     public static class PipServer
     {
 
