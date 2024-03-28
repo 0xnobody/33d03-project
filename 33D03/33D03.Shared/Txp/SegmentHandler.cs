@@ -39,6 +39,11 @@ namespace _33D03.Shared.Txp
         public List<uint> IncomingSegmentAcks = new List<uint>();
 
         /// <summary>
+        /// Was the incoming finish segment received?
+        /// </summary>
+        public bool IncomingFinished = false;
+
+        /// <summary>
         /// For the current outgoing packet, the number of segments (or highest segment number) that need to be acknowledged.
         /// </summary>
         public uint NumberOfSegmentsToAck;
@@ -284,6 +289,8 @@ namespace _33D03.Shared.Txp
             //
             if (final)
             {
+                IncomingFinished = true;
+
                 // Go through the list of sequence numbers and check if we have received them.
                 //
                 for (uint i = 0; i < seqNum; i++)
@@ -302,6 +309,11 @@ namespace _33D03.Shared.Txp
         /// <returns></returns>
         public bool FullPacketReady()
         {
+            if (!IncomingFinished)
+            {
+                return false;
+            }
+
             for (int i = 1; i < IncomingSegments.Count; i++)
             {
                 if (IncomingSegments.ElementAt(i).Key != IncomingSegments.ElementAt(i - 1).Key + 1)
@@ -336,6 +348,7 @@ namespace _33D03.Shared.Txp
 
             IncomingPacketIndex++;
             IncomingSegments.Clear();
+            IncomingFinished = false;
 
             return bufferer.ConsumePacket();
         }

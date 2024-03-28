@@ -38,14 +38,9 @@ namespace _33D03.Shared.Txp
 
         /// <summary>
         /// Packet contains a reset request - The provided conversation ID is purged.
-        /// The client must respond with a RESET_ACK.
+        /// This is just a hint. Does not need to be acknowledged.
         /// </summary>
         RESET = 6,
-
-        /// <summary>
-        /// Acknowledgment of a reset request.
-        /// </summary>
-        RESET_ACK = 7,
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1, Size = 24)]

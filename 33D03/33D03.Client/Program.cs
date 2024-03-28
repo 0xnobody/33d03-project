@@ -58,7 +58,7 @@ namespace _33D03.Client
                     builder.ForLogger().FilterMinLevel(LogLevel.Trace).WriteToColoredConsole();
                 });
 
-                TxpClient client = new TxpClient("127.0.0.1", 1151);
+                TxpClient client = new TxpClient("33d03-project.college", 24588);
                 string filePath = @$"C:\PipList\client{Guid.NewGuid()}_output.txt";
                 client.OnPacketReceived += (data) =>
                 {
@@ -104,10 +104,9 @@ namespace _33D03.Client
                     }
                 };
 
-                PipClient.VoteInit(client);
-
                 client.Start();
 
+                PipClient.VoteInit(client);
             }
             catch (Exception ex)
             {

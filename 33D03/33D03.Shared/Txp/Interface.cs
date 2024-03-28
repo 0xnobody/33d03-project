@@ -59,41 +59,32 @@ namespace _33D03.Shared.Txp
 
             return new Tuple<uint, byte[]>(header.seqNum, packetBytes);
         }
-
-        public static byte[]? ReceiveWithTimeout(UdpClient client, ref IPEndPoint remoteEndPoint, TimeSpan timeout)
-        {
-            var asyncResult = client.BeginReceive(null, null);
-            asyncResult.AsyncWaitHandle.WaitOne(timeout);
-            if (asyncResult.IsCompleted)
-            {
-                IPEndPoint remoteEP = null;
-                byte[] receivedData = client.EndReceive(asyncResult, ref remoteEP);
-
-                return receivedData;
-            }
-            else
-            {
-                return null;
-            }
-        }
-
-        public static Tuple<Shared.Txp.Header, byte[]>? ListenForPacket(UdpClient client, ref IPEndPoint remoteEndPoint, TimeSpan? timeout = null)
+        public static Tuple<Shared.Txp.Header, byte[]>? ListenForPacket(UdpClient client, ref IPEndPoint remoteEndPoint)
         {
             // Block and wait to receive data, storing the sender's endpoint.
-            byte[]? receivedData;
+            byte[] receivedData = new byte[0];
 
-            if (timeout == null)
+            // TODO: we use this so we don't get an exception from ICMP.
+            // maybe we can use ICMP messages here to quickly detect if the client is still alive?
+            //
+            while (true)
             {
-                receivedData = client.Receive(ref remoteEndPoint);
-            }
-            else
-            {
-                receivedData = ReceiveWithTimeout(client, ref remoteEndPoint, timeout ?? TimeSpan.MinValue);
-            }
+                try
+                {
+                    receivedData = client.Receive(ref remoteEndPoint);
+                }
+                catch (SocketException ex)
+                {
+                    if (ex.SocketErrorCode != SocketError.ConnectionReset)
+                    {
+                        throw;
+                    }
+                }
 
-            if (receivedData == null)
-            {
-                return null;
+                if (receivedData.Length != 0)
+                {
+                    break;
+                }
             }
 
             // Validate the minimum size of received data to ensure it contains a complete header.
