@@ -34,6 +34,8 @@ namespace _33D03.Client
         // Event triggered upon receiving a complete packet.
         public event PacketReceived OnPacketReceived;
 
+        public bool IsRunning { get; private set; }
+
         // Constructor: initializes client, server endpoint, conversation ID, and starts listening thread.
         public TxpClient(string serverIp, int serverPort)
         {
@@ -51,13 +53,27 @@ namespace _33D03.Client
         // Starts the listening thread for incoming data.
         public void Start()
         {
-            while (true)
+            IsRunning = true;
+            while (IsRunning)
             {
                 ListenForData();
             }
         }
         
-        // Sends data to the server, with a specified number of retry attempts.
+        public void Close()
+        {
+            //
+            // TODO: send RESET message to server
+            //
+            IsRunning = false;
+            client.Close();
+        }
+
+        /// <summary>
+        /// Send or queue data to be sent to the server.
+        /// Can be invoked from multiple threads.
+        /// </summary>
+        /// <param name="data"></param>
         public void Send(byte[] data)
         {
             segmentHandler.SendOrQueuePacket(data, serverEndPoint);

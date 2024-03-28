@@ -45,8 +45,11 @@ namespace _33D03.Server
         // Dictionary mapping conversation IDs to client conversation states.
         public Dictionary<uint, TxpClientConversation> conversations = new Dictionary<uint, TxpClientConversation>();
 
+        private Mutex conversationsMutex = new Mutex(); // TODO: implement thread-safe conversation access
+
         // Event triggered when a complete data packet is received.
         public event PacketReceived OnPacketReceived;
+        public bool IsRunning { get; private set; }
 
         // Initializes the server to listen on the specified port.
         public TxpServer(int port)
@@ -57,18 +60,43 @@ namespace _33D03.Server
         // Starts the server's listening thread, beginning packet reception.
         public void Start()
         {
-            while (true)
+            IsRunning = true;
+            while (IsRunning)
             {
                 ListenForData();
             }
         }
 
-        // Sends data to the specified client conversation. Attempts parameter defines the max number of send attempts.
+        public void Stop()
+        {
+            //
+            // TODO: send RESET message to all clients
+            //
+            IsRunning = false;
+            server.Close();
+        }
+
+        /// <summary>
+        /// Send the specified data to the specified client. Can be called from any thread.
+        /// </summary>
+        /// <param name="data"></param>
+        /// <param name="conversation"></param>
         public void Send(byte[] data, TxpClientConversation conversation)
         {
             conversation.SegmentHandler.SendOrQueuePacket(data, conversation.LastEndPoint);
         }
 
+        /// <summary>
+        /// Broadcast the specified data to all connected clients. Can be called from any thread.
+        /// </summary>
+        /// <param name="data"></param>
+        public void Broadcast(byte[] data)
+        {
+            foreach (var conv in conversations.Values)
+            {
+                Send(data, conv);
+            }
+        }
         private void ListenForData()
         {
             IPEndPoint remoteEndPoint = new IPEndPoint(IPAddress.Loopback, 0000);
@@ -115,6 +143,9 @@ namespace _33D03.Server
                     break;
                 case Shared.Txp.PacketType.NACK:
                     conversation.SegmentHandler.NackReceived(header.seqNum, header.pcktNum, remoteEndPoint);
+                    break;
+                case Shared.Txp.PacketType.RESET:
+                    // TODO: implement
                     break;
                 default:
                     logger.Warn("Received unknown packet type");

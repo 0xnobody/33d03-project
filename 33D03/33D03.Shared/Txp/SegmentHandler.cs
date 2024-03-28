@@ -58,6 +58,8 @@ namespace _33D03.Shared.Txp
         /// </summary>
         public bool ReadyForNextOutgoingPacket = true;
 
+        public Mutex PacketQueueMutex = new Mutex();
+
         public SegmentHandler(UdpClient client, uint convId)
         {
             udpClient = client;
@@ -81,6 +83,11 @@ namespace _33D03.Shared.Txp
             uint packetIndex = OutgoingPacketIndex;
             Task.Delay(Shared.Txp.Constants.ACK_TIMEOUT_MS).ContinueWith((Task task) =>
             {
+                //
+                // TODO: do we need to acquire packet queue mutex here?
+                // We might have a race condition with OutgoingPacketIndex here.
+                //
+
                 // If the packet index has changed, we have moved on to the next packet and should not send a NACK.
                 // This would occur if the client resent the previous packet after we moved on to the next packet.
                 //
@@ -119,6 +126,8 @@ namespace _33D03.Shared.Txp
         /// <param name="endPoint"></param>
         public void SendOrQueuePacket(byte[] data, IPEndPoint endPoint)
         {
+            PacketQueueMutex.WaitOne();
+
             if (ReadyForNextOutgoingPacket)
             {
                 sendPacket(data, endPoint);
@@ -129,6 +138,8 @@ namespace _33D03.Shared.Txp
             }
 
             ReadyForNextOutgoingPacket = false;
+
+            PacketQueueMutex.ReleaseMutex();
         }
 
         /// <summary>
@@ -193,6 +204,8 @@ namespace _33D03.Shared.Txp
         /// <param name="endPoint"></param>
         public void SendNextPacketIfReady(IPEndPoint endPoint)
         {
+            PacketQueueMutex.WaitOne();
+
             // If we have not received all ACKs for the current packet, we should not send the next packet.
             //
             if (!AllAcksReceived())
@@ -220,6 +233,8 @@ namespace _33D03.Shared.Txp
             {
                 ReadyForNextOutgoingPacket = true;
             }
+
+            PacketQueueMutex.WaitOne();
         }
 
         /// <summary>
