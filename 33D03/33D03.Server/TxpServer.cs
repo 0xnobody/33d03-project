@@ -7,176 +7,150 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Security.AccessControl;
 using Microsoft.VisualBasic;
+using _33D03.Shared.Pip;
+using _33D03.Shared.Txp;
 
 namespace _33D03.Server
 {
-    delegate void PacketReceived(TxpClientConversation clientconversation, byte[] data);
+    delegate void PacketReceived(TxpClientConversation clientConversation, byte[] data);
 
+    // Manages conversation state with a client, including sequence numbers and the last known endpoint.
     internal class TxpClientConversation
     {
+        // Unique identifier for the conversation.
         public uint ConversationId;
-        public uint IncomingSequenceNumber;
-        public uint OutgoingSequenceNumber;
+        // The last known endpoint from which the client sent a packet.
         public IPEndPoint LastEndPoint;
 
-        public Shared.Txp.AckHandler AckHandler;
-        public Shared.Txp.PacketBufferer PacketBufferer;
+        public SegmentHandler SegmentHandler;
 
+        // Initializes a new conversation with a client.
         public TxpClientConversation(UdpClient client, uint conversationId, IPEndPoint initialEndPoint)
         {
             ConversationId = conversationId;
-            IncomingSequenceNumber = 0;
-            OutgoingSequenceNumber = 0;
-            LastEndPoint = initialEndPoint;
-
-            AckHandler = new Shared.Txp.AckHandler(client, conversationId);
-            PacketBufferer = new Shared.Txp.PacketBufferer();
+            LastEndPoint = initialEndPoint; // Store the client's endpoint.
+            SegmentHandler = new SegmentHandler(client, conversationId);
         }
     }
 
+    // Implements the server logic for handling TXP (a hypothetical protocol) clients and their data packets.
     internal class TxpServer
     {
+        // Logger for recording server events and errors.
         private static NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
 
+        // UDP client used by the server to receive and send data.
         private UdpClient server;
 
-        // TODO: cleanup conversations after no activity after a while
+        // Dictionary mapping conversation IDs to client conversation states.
         public Dictionary<uint, TxpClientConversation> conversations = new Dictionary<uint, TxpClientConversation>();
 
-        private Thread listenerThread;
+        private Mutex conversationsMutex = new Mutex(); // TODO: implement thread-safe conversation access
 
+        // Event triggered when a complete data packet is received.
         public event PacketReceived OnPacketReceived;
-        
+        public bool IsRunning { get; private set; }
+
+        // Initializes the server to listen on the specified port.
         public TxpServer(int port)
         {
-            server = new UdpClient(port);
-            listenerThread = new Thread(ListenForPackets);
+            server = new UdpClient(port); // Bind the server to the specified port.
         }
 
+        // Starts the server's listening thread, beginning packet reception.
         public void Start()
         {
-            listenerThread.Start();
-        }
-        public void Send(byte[] data, TxpClientConversation conversation, int attempts = 3)
-        {
-            if (attempts == 0)
+            IsRunning = true;
+            while (IsRunning)
             {
-                throw new Exception("Failed to send data after 3 attempts");
-            }
-
-            var packetsToQueue = SerializeData(data, conversation);
-
-            foreach (var packet in packetsToQueue)
-            {
-                logger.Debug($"Sending packet to cid {conversation.ConversationId} at {conversation.LastEndPoint} with sn {packet.Item1}");
-
-                server.Send(packet.Item2, packet.Item2.Length, conversation.LastEndPoint);
-
-                // Wait for the ACK/NACK for a certain timeout
-                if (conversation.AckHandler.WaitForAckOrTimeout() == Shared.Txp.AckAction.Rebroadcast)
-                {
-                    logger.Warn($"Timeout passed for sn {packet.Item1}, resending");
-
-                    // Resend packet, decrease attempt number
-                    Send(data, conversation, attempts - 1);
-                }
-            }
-
-            // Reset outgoing sn after full packet is sent.
-            conversation.OutgoingSequenceNumber = 0;
-        }
-
-        private void ListenForPackets()
-        {
-            while (true)
-            {
-                IPEndPoint remoteEndPoint = new IPEndPoint(IPAddress.Any, 0);
-
-                byte[] receivedData = server.Receive(ref remoteEndPoint);
-
-                if (receivedData.Length < Shared.Txp.Constants.HEADER_SIZE)
-                {
-                    logger.Log(NLog.LogLevel.Error, "Received data is too small to be a packet");
-
-                    throw new Exception("Received data is too small to be a packet");
-                }
-
-                var header = Shared.Txp.Header.FromBytes(receivedData);
-                if (!header.IsValid(receivedData))
-                {
-                    logger.Warn($"Packet received from {remoteEndPoint} is invalid (magic {header.magic:X}, csum {header.checksum:X}), ignoring");
-
-                    //
-                    // We can't send a NACK here, as the convId may also be invalid.
-                    // So we just wait for a retransmission.
-                    //
-
-                    continue;
-                }
-
-                logger.Trace($"Received valid packet from of type {Enum.GetName(typeof(Shared.Txp.PacketType), header.type)}");
-
-                if (conversations.ContainsKey(header.convId) == false)
-                {
-                    conversations.Add(header.convId, new TxpClientConversation(server, header.convId, remoteEndPoint));
-                }
-
-                var conversation = conversations[header.convId];
-
-                // Update the end-point in case it changed, ie. the client switched networks
-                conversation.LastEndPoint = remoteEndPoint;
-
-                switch (header.type)
-                {
-                    case Shared.Txp.PacketType.Data:
-                        logger.Debug($"Received {conversation.ConversationId} data packet with sn {header.seqNum}");
-
-                        var lengthOfDataReceived = receivedData.Length - Shared.Txp.Constants.HEADER_SIZE;
-
-                        if (conversation.IncomingSequenceNumber == header.seqNum)
-                        {
-                            conversation.PacketBufferer.AddPacket(header.GetContainedData(receivedData));
-                            conversation.IncomingSequenceNumber++;
-
-                            // logger.Trace($"Current {conversation.conversationId} buffer state: {BitConverter.ToString(conversation.PacketBuffer)}");
-
-                            conversation.AckHandler.SendAck(header.seqNum, conversation.LastEndPoint);
-
-                            if (header.finish == 1)
-                            {
-                                OnPacketReceived(conversation, conversation.PacketBufferer.ConsumePacket());
-                                conversation.IncomingSequenceNumber = 0;
-                            }
-                        }
-                        else if (conversation.IncomingSequenceNumber > header.seqNum)
-                        {
-                            logger.Warn($"Received out of order packet with sn {header.seqNum}");
-
-                            conversation.AckHandler.SendNack(header.seqNum, conversation.LastEndPoint);
-                        }
-                        else
-                        {
-                            logger.Warn($"Received a repeat packet that has already been processed with sn {header.seqNum}. Ignoring.");
-                        }
-
-                        break;
-                    case Shared.Txp.PacketType.ACK:
-                        conversation.AckHandler.SpecifyAckReceived();
-                        break;
-                    case Shared.Txp.PacketType.NACK:
-                        conversation.AckHandler.SpecifyNackReceived();
-                        break;
-                }
+                ListenForData();
             }
         }
-        private List<Tuple<uint, byte[]>> SerializeData(byte[] data, TxpClientConversation conversation)
+
+        public void Stop()
         {
-            return Shared.Txp.Interface.SerializeData(data, conversation.ConversationId, ref conversation.OutgoingSequenceNumber);
+            //
+            // TODO: send RESET message to all clients
+            //
+            IsRunning = false;
+            server.Close();
         }
 
-        private Tuple<uint, byte[]> CreatePacket(byte[] rawData, bool final, TxpClientConversation conversation)
+        /// <summary>
+        /// Send the specified data to the specified client. Can be called from any thread.
+        /// </summary>
+        /// <param name="data"></param>
+        /// <param name="conversation"></param>
+        public void Send(byte[] data, TxpClientConversation conversation)
         {
-            return Shared.Txp.Interface.CreatePacket(rawData, final, conversation.ConversationId, ref conversation.OutgoingSequenceNumber);
+            conversation.SegmentHandler.SendOrQueuePacket(data, conversation.LastEndPoint);
+        }
+
+        /// <summary>
+        /// Broadcast the specified data to all connected clients. Can be called from any thread.
+        /// </summary>
+        /// <param name="data"></param>
+        public void Broadcast(byte[] data)
+        {
+            foreach (var conv in conversations.Values)
+            {
+                Send(data, conv);
+            }
+        }
+        private void ListenForData()
+        {
+            IPEndPoint remoteEndPoint = new IPEndPoint(IPAddress.Loopback, 0000);
+
+            var pckt = Shared.Txp.Interface.ListenForPacket(server, ref remoteEndPoint);
+            if (pckt == null)
+            {
+                logger.Warn("Something went wrong in listening for data");
+                throw new Exception("Received null response from ListenForPacket");
+            }
+
+            var header = pckt.Item1;
+            var receivedData = pckt.Item2;
+
+            // If this is the first packet from a new conversation, create a new conversation object.
+            if (!conversations.ContainsKey(header.convId))
+            {
+                conversations.Add(header.convId, new TxpClientConversation(server, header.convId, remoteEndPoint));
+            }
+
+            // Retrieve the conversation object associated with this packet.
+            var conversation = conversations[header.convId];
+
+            // Update the conversation's last known endpoint. This is important if the client's network address changes.
+            conversation.LastEndPoint = remoteEndPoint;
+
+            switch (header.type)
+            {
+                case Shared.Txp.PacketType.Data:
+                    conversation.SegmentHandler.SegmentReceived(header.seqNum, header.pcktNum, header.finish == 1, header.GetContainedData(receivedData), remoteEndPoint);
+
+                    if (conversation.SegmentHandler.FullPacketReady())
+                    {
+                        OnPacketReceived(conversation, conversation.SegmentHandler.ConsumeFullPacket());
+                    }
+                    break;
+                case Shared.Txp.PacketType.ACK:
+                    conversation.SegmentHandler.AckReceived(header.seqNum, header.pcktNum);
+
+                    if (conversation.SegmentHandler.AllAcksReceived())
+                    {
+                        conversation.SegmentHandler.SendNextPacketIfReady(remoteEndPoint);
+                    }
+                    break;
+                case Shared.Txp.PacketType.NACK:
+                    conversation.SegmentHandler.NackReceived(header.seqNum, header.pcktNum, remoteEndPoint);
+                    break;
+                case Shared.Txp.PacketType.RESET:
+                    // TODO: implement
+                    break;
+                default:
+                    logger.Warn("Received unknown packet type");
+                    break;
+            }
         }
     }
 }

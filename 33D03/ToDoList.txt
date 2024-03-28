@@ -1,0 +1,28 @@
+    1.ZeroTier Port Forwarding
+    2.client auto connect, discover other nodes
+    3.Txp multithread
+    4.Txp Ack Bug, does not support more than 3 nodes, some times crashes at 3.
+        -My personal speculation is that based on how client respond, sometimes a response packet CAN take the place of a ACK packet
+    5.Better SMT generation
+    
+
+    *Does client require hard coded IP addresses to connect to?
+        -Can we make auto server connection?
+    *How ZeroTier work?
+        -Asked Mathew to look into it.
+        -Port forwarding,
+        -cloud server
+    
+    Discussion of project goals regarding Project brief.
+    i) discovering other nodes
+    ii) negotiate with other nodes
+        -see their capabilities, services and constraints
+    iii) reaching consensus
+        -shared agreement -> z3 result
+    iv) Action: Meaningful and effective use of consensus
+        -Problem solving
+            -> Math problems.
+    
+    Bonus: How do we detect and stop malicious behaviour +8
+
+    code + report submit by week 12.

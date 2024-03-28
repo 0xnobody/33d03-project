@@ -9,18 +9,53 @@ namespace _33D03.Shared.Txp
 {
     public enum PacketType : ushort
     {
+        /// <summary>
+        /// Packet contains data segment immediately following the header
+        /// </summary>
         Data = 0,
+
+        /// <summary>
+        /// Packet contains an acknowledgment
+        /// </summary>
         ACK = 1,
+
+        /// <summary>
+        /// Packet contains a negative acknowledgement
+        /// </summary>
         NACK = 2,
+
+        /// <summary>
+        /// Packet contains a synchronization request - If the client doesn't respond with a SYN-ACK, 
+        /// the server will resend the SYN packet up to a maximum number of times.
+        /// If the server doesn't receive a SYN-ACK after the maximum number of attempts, the conversation ID is purged.
+        /// </summary>
+        SYN = 3,
+
+        /// <summary>
+        /// Response to a synchronization request - The client must respond with a SYN-ACK
+        /// </summary>
+        SYN_ACK = 5,
+
+        /// <summary>
+        /// Packet contains a reset request - The provided conversation ID is purged.
+        /// The client must respond with a RESET_ACK.
+        /// </summary>
+        RESET = 6,
+
+        /// <summary>
+        /// Acknowledgment of a reset request.
+        /// </summary>
+        RESET_ACK = 7,
     }
 
-    [StructLayout(LayoutKind.Sequential, Pack = 1, Size = 20)]
+    [StructLayout(LayoutKind.Sequential, Pack = 1, Size = 24)]
     public struct Header
     {
         public uint magic;
         public uint checksum;
         public uint convId;
         public uint seqNum;
+        public uint pcktNum;
         public ushort finish;
         public PacketType type;
 

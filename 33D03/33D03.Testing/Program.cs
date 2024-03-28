@@ -1,4 +1,4 @@
-﻿using Microsoft.Z3;
+using Microsoft.Z3;
 
 var unSatExample = "(set-logic QF_LIA) (declare-const x Int) (declare-const y Int) (assert (= (- x y) (+ x (- y) 1))) (check-sat)";
 var satExample = "(set-logic QF_LIA) (declare-const x Int) (declare-const y Int) (assert (= (+ x (* 2 y)) 20)) (assert (= (- x y) 2)) (check-sat)";
