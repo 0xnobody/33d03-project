@@ -15,6 +15,8 @@ namespace _33D03.Shared.Pip // Declaring a namespace for organizing related code
         Vote_Broadcast_Vote_S2C = 0x0003, // Defining an enumeration member named Vote_Broadcast_Vote_S2C with value 0x0003.
         Vote_Answer_Vote_C2S = 0x0004, // Defining an enumeration member named Vote_Answer_Vote_C2S with value 0x0004.
         Vote_Broadcast_Vote_Result_S2C = 0x0005, // Defining an enumeration member named Vote_Broadcast_Vote_Result_S2C with value 0x0005.
+        Client_Info = 0x0006, //s2c client info list
+        Client_request_info = 0x0007 //c2s request info list
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)] // Applying an attribute to control the physical layout of the data fields in this struct when it is passed to unmanaged code.

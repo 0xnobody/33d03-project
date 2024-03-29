@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using _33D03.Shared;
 using _33D03.Shared.Pip;
 using System.Data.SqlTypes;
+using System.Formats.Asn1;
 
 namespace _33D03.Server
 {
@@ -16,7 +17,6 @@ namespace _33D03.Server
     {
         // Creates a logger instance for this class using NLog.
         private static NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
-
 
 
         private static void Main(string[] args)
@@ -32,6 +32,7 @@ namespace _33D03.Server
 
                 // Initialize a new TxpServer instance listening on port 1151.
                 TxpServer txpServer = new TxpServer(24588);
+                List<ServerListofClients> ServerclientsList = new List<ServerListofClients>();
 
                 // Subscribe to the OnPacketReceived event with an anonymous method to handle incoming packets.
 
@@ -46,61 +47,22 @@ namespace _33D03.Server
 
                     int connectedclients = txpServer.conversations.Count;
                     logger.Trace($"Received packet from CID {clientState.ConversationId} of type {receivedHeader.type}");
-
-                    if (receivedHeader.type == PacketType.Vote_Request_Vote_C2S)
+                    if (receivedHeader.type == PacketType.Hello_C2S)
+                    {
+                        PipServer.HelloRecieved(txpServer, clientState, ServerclientsList, data, clientState.ConversationId);
+                        PipServer.SendInfo(txpServer, clientState, ServerclientsList, data, clientState.ConversationId);
+                    }
+                    else if (receivedHeader.type == PacketType.Vote_Request_Vote_C2S)
                     {
                         vote_counter = 0;
                         unsatcount = 0;
                         satcount = 0;
+                        PipServer.SendInfo(txpServer, clientState, ServerclientsList, data, clientState.ConversationId);
                         PipServer.PipServerBroadcastQuestion(txpServer, data);
-
                     }
                     else if (receivedHeader.type == PacketType.Vote_Answer_Vote_C2S)
                     {
-                        Console.WriteLine();
-                        Console.WriteLine();
-                        Console.WriteLine();
-                        Console.WriteLine(txpServer.conversations.Count);
-                        Console.WriteLine();
-                        Console.WriteLine();
-                        Console.WriteLine();
-                        PacketAnswerVote voteresultpacket = PacketAnswerVote.FromBytes(data);
-                        logger.Info("Client answered vote");
-                        vote_counter += 1;
-                        ushort final = 0;
-                        if (voteresultpacket.GetResponse() == 1) satcount++;
-                        else if (voteresultpacket.GetResponse() == 0) unsatcount++;
-                        Console.WriteLine(vote_counter + " " + unsatcount + " " + satcount);
-                        Console.WriteLine(voteresultpacket.GetResponse());
-                        Console.WriteLine();
-                        Console.WriteLine();
-                        if (vote_counter == txpServer.conversations.Count)
-                        {
-                            final = PipServer.OrganizeData(txpServer, vote_counter, unsatcount, satcount);
-                            Guid tempguid = voteresultpacket.GetGuid();
-                            Header temphdr = new Header(PacketType.Vote_Broadcast_Vote_Result_S2C);
-                            PacketBroadcastVoteResult ResultS2Cpacket = new PacketBroadcastVoteResult(temphdr, tempguid, final);
-                            byte[] finaldata = ResultS2Cpacket.ToBytes();
-                            foreach (var conversationEntry in txpServer.conversations)
-                            {
-                                var conversation = conversationEntry.Value;
-                                txpServer.Send(finaldata, conversation);
-                            }
-                            vote_counter = 0;
-                            unsatcount = 0;
-                            satcount = 0;
-                            Console.WriteLine(vote_counter + " " + unsatcount + " " + satcount);
-                            logger.Info($"final packet result for guid {voteresultpacket.GetGuid()} is {final}");
-                            var ServerLogToWrite = new ServerVoteLog(voteresultpacket.GetGuid(), final);
-                            DateTime currentTime = DateTime.Now;
-
-                            using (StreamWriter writer = new StreamWriter(filePath, true))
-                            {
-                                writer.Write(currentTime + " " + ServerLogToWrite.GetGuid() + " ");
-                                writer.WriteLine(final);
-                            }
-                        }
-
+                        PipServer.handlingvoteresults(txpServer,data, vote_counter,  satcount,  unsatcount,filePath);
                     }
                 };
 
@@ -121,6 +83,8 @@ namespace _33D03.Server
                 }*/
 
                 // Starts the server to begin listening for incoming connections and packets.
+
+
                 txpServer.Start();
 
                 // Logs an Info level message indicating the server has started.
@@ -135,5 +99,7 @@ namespace _33D03.Server
             // Puts the main thread to sleep indefinitely, preventing the program from exiting.
             Thread.Sleep(-1);
         }
+
     }
+
 }

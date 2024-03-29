@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using _33D03.Shared.Pip;
+using Microsoft.VisualBasic;
 
 namespace _33D03.Client
 {
@@ -14,40 +15,10 @@ namespace _33D03.Client
     {
         private static NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
 
-        static void WriteLinesFromPreviousLine(string inputFilePath, string outputFilePath)
-        {
-            // Check if input file exists
-            if (File.Exists(inputFilePath))
-            {
-                // Read lines from input file and write to output file
-                using (StreamReader reader = new StreamReader(inputFilePath))
-                using (StreamWriter writer = new StreamWriter(outputFilePath))
-                {
-                    string line;
-                    string previousLine = null;
 
-                    while ((line = reader.ReadLine()) != null)
-                    {
-                        if (previousLine != null)
-                        {
-                            writer.WriteLine(previousLine);
-                        }
-                        previousLine = line;
-                    }
 
-                    // Write the last line from the input file
-                    if (previousLine != null)
-                    {
-                        writer.WriteLine(previousLine);
-                    }
-                }
-            }
-            else
-            {
-                Console.WriteLine("Input file does not exist.");
-            }
-        }
-      
+
+
         private static void Main(string[] args)
         {
             try
@@ -58,55 +29,22 @@ namespace _33D03.Client
                     builder.ForLogger().FilterMinLevel(LogLevel.Trace).WriteToColoredConsole();
                 });
 
-                TxpClient client = new TxpClient("33d03-project.college", 24588);
+                TxpClient client = new TxpClient("127.0.0.1", 24588);
                 string filePath = @$"C:\PipList\client{Guid.NewGuid()}_output.txt";
                 client.OnPacketReceived += (data) =>
                 {
-                    var pipHeader = Header.FromBytes(data);
-
-                    switch (pipHeader.type)
-                    {
-                        case PacketType.Vote_Broadcast_Vote_S2C:
-                            logger.Trace($"Received packet from Server with data: {PacketBroadcastVote.Deserialize(data)}");
-                            (PacketBroadcastVote recievedBroadcastPacket, string question) = PacketBroadcastVote.Deserialize(data);
-                            PacketType headerType = recievedBroadcastPacket.HeaderInfo.type;
-                            Guid voteID = recievedBroadcastPacket.GetGuid();
-                            Console.WriteLine("header type is " + headerType);
-
-                            if (headerType == PacketType.Vote_Broadcast_Vote_S2C)
-                            {
-                                Console.WriteLine("Solving for smtlib question: " + question);
-                                PipClient.ClientAnswerVote(client, question, voteID);
-                                DateTime currentTimes = DateTime.Now;
-                                string timedatas = currentTimes + " ";
-                                using (StreamWriter writer = new StreamWriter(filePath, true))
-                                {
-                                    writer.Write(timedatas + " " + question + " ");
-                                    Console.WriteLine("wrote to " + filePath);
-                                }
-                            }
-                            break;
-
-                        case PacketType.Vote_Broadcast_Vote_Result_S2C:
-                            logger.Trace($"Received Reuslt packet from server with dat: {PacketBroadcastVoteResult.FromBytes(data)}");
-                            PacketBroadcastVoteResult voteResult = PacketBroadcastVoteResult.FromBytes(data);
-                            DateTime currentTime = DateTime.Now;
-
-
-                            using (StreamWriter writer = new StreamWriter(filePath, true))
-                            {
-                                writer.WriteLine(voteResult.GetResponse() + " " + voteResult.GetGuid());
-                                Console.WriteLine("wrote to " + filePath);
-                            }
-
-                            break;
-
-                    }
+                    OnPacketRecievedHandler(client, data);
                 };
 
                 client.Start();
 
+
+                PipClient.SendHello(client);
                 PipClient.VoteInit(client);
+
+
+
+
             }
             catch (Exception ex)
             {
@@ -115,6 +53,75 @@ namespace _33D03.Client
 
             Thread.Sleep(-1);
         }
-    }
 
+
+
+
+
+
+        private static void OnVoteBroadCastVoteS2C(TxpClient client, String filePath, byte[] data)
+        {
+            logger.Trace($"Received packet from Server with data: {PacketBroadcastVote.Deserialize(data)}");
+            (PacketBroadcastVote recievedBroadcastPacket, string question) = PacketBroadcastVote.Deserialize(data);
+            PacketType headerType = recievedBroadcastPacket.HeaderInfo.type;
+            Guid voteID = recievedBroadcastPacket.GetGuid();
+            Console.WriteLine("header type is " + headerType);
+
+            if (headerType == PacketType.Vote_Broadcast_Vote_S2C)
+            {
+                Console.WriteLine("Solving for smtlib question: " + question);
+                PipClient.ClientAnswerVote(client, question, voteID);
+                DateTime currentTimes = DateTime.Now;
+                string timedatas = currentTimes + " ";
+                using (StreamWriter writer = new StreamWriter(filePath, true))
+                {
+                    writer.Write(timedatas + " " + question + " ");
+                    Console.WriteLine("wrote to " + filePath);
+                }
+            }
+        }
+
+        private static void OnVoteBroadCastVoteS2C(string filePath, byte[] data)
+        {
+            logger.Trace($"Received Reuslt packet from server with dat: {PacketBroadcastVoteResult.FromBytes(data)}");
+            PacketBroadcastVoteResult voteResult = PacketBroadcastVoteResult.FromBytes(data);
+            DateTime currentTime = DateTime.Now;
+
+
+            using (StreamWriter writer = new StreamWriter(filePath, true))
+            {
+                writer.WriteLine(voteResult.GetResponse() + " " + voteResult.GetGuid());
+                Console.WriteLine("wrote to " + filePath);
+            }
+        }
+
+        private static void OnPacketRecievedHandler(TxpClient client, byte[] data)
+        {
+            var pipHeader = Header.FromBytes(data);
+            string filePath = @$"C:\PipList\client{Guid.NewGuid()}_output.txt";
+
+            switch (pipHeader.type)
+            {
+                case PacketType.Vote_Broadcast_Vote_S2C:
+                    OnVoteBroadCastVoteS2C(client, filePath, data);
+                    break;
+
+                case PacketType.Vote_Broadcast_Vote_Result_S2C:
+                    OnVoteBroadCastVoteS2C(filePath, data);
+                    break;
+
+                case PacketType.Hello_S2C:
+                    Console.WriteLine("server waved hello!");
+                    break;
+                case PacketType.Client_Info:
+                    (Header hdr, List<ServerListofClients> infolist) = PacketInfo.DeserializeListOfServerListofClients(data);
+                    foreach (var ServerListofClients in infolist)
+                    {
+                        Console.WriteLine($"Recieved, ClientID: {ServerListofClients.convoid}, numfeatures {ServerListofClients.numFeatures}, Features:{String.Join(", ", ServerListofClients.features)}");
+                    }
+                    break;
+
+            }
+        }
+    }
 }

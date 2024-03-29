@@ -43,6 +43,16 @@ namespace _33D03.Client
             return smtBuilder.ToString();
         }
 
+        public static void SendHello(TxpClient client){
+            var header = new Header(PacketType.Hello_C2S);
+            Feature [] features = {Feature.SMTVerificationFeature, Feature.TestFeatrue1, Feature.TestFeatrue2};
+            var hellopacket = new PacketHello(header);
+            hellopacket.numFeatures = features.Length;
+            byte [] hellosendpacket = hellopacket.Serialize(features);
+            client.Send(hellosendpacket);
+            logger.Info($"Client Sent hello to server with features {string.Join(", ",features)}");
+        }
+
         public static void VoteInit(TxpClient client)
         {
             var question = GenerateSMTLIBString();
