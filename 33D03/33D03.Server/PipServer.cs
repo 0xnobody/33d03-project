@@ -109,7 +109,7 @@ namespace _33D03.Server
 
 
         }
-        internal static void ClientDisconnected(TxpClientConversation clientconversation, List<ServerListofClients> clientsList)
+        internal static void ClientDisconnected(TxpClientConversation clientconversation, List<ServerListofClients> clientsList, TxpServer server)
         {
             logger.Info($"Client disconnected: CID {clientConversation.convoid}");
 
@@ -121,6 +121,13 @@ namespace _33D03.Server
                     break; //Exits loop once the client is found and removed from list
                 }
             }
+            BroadcastUpdatedClientList(clientsList, server);
+        }
+
+        internal static void BroadcastUpdatedClientList(List<ServerListofClients> clientsList, TxpServer server)
+        {
+            byte[] clientListBytes = Serialize(clientsList);
+            server.Broadcast(clientsListBytes);
         }
     }
 }
