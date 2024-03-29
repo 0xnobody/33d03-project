@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
+using _33D03.Shared;
 using _33D03.Shared.Pip;
 using Microsoft.VisualBasic;
 
@@ -27,6 +28,15 @@ namespace _33D03.Client
                 else if (input == "info"){
                     PipClient.Client_request_info(client);
                 }
+                else if (input == "help"){
+                    helpPrint();
+                }
+                else if (input == "flood"){
+                    byte [] Getbytes = PipClient.GetinfoBytes();
+                    while (1 == 1){
+                        client.Send(Getbytes);
+                    }
+                }
             }
         }
 
@@ -41,7 +51,7 @@ namespace _33D03.Client
                     builder.ForLogger().FilterMinLevel(LogLevel.Trace).WriteToColoredConsole();
                 });
 
-                TxpClient client = new TxpClient("127.0.0.1", 24588);
+                TxpClient client = new TxpClient("192.168.56.1", 24588);
                 string filePath = @$"C:\PipList\client{Guid.NewGuid()}_output.txt";
                 client.OnPacketReceived += (data) =>
                 {
@@ -55,9 +65,8 @@ namespace _33D03.Client
                 StartThread.Start();
 
                 PipClient.SendHello(client);
-                
 
-                
+                helpPrint();       
 
 
 
@@ -72,7 +81,12 @@ namespace _33D03.Client
 
 
 
-
+        private static void helpPrint(){
+                Console.WriteLine("Inputs:");
+                Console.WriteLine("vote -- initiate vote");
+                Console.WriteLine("info -- request Client list from server");
+                Console.WriteLine("exit -- exits");       
+        }
 
 
         private static void OnVoteBroadCastVoteS2C(TxpClient client, String filePath, byte[] data)
@@ -110,6 +124,7 @@ namespace _33D03.Client
                 Console.WriteLine("wrote to " + filePath);
             }
         }
+
 
         private static void OnPacketRecievedHandler(TxpClient client, byte[] data)
         {

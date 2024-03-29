@@ -51,6 +51,13 @@ namespace _33D03.Client
             logger.Info($"Client Sent info request to server");
         }
 
+        public static byte [] GetinfoBytes(){
+            var header = new Header(PacketType.Client_request_info);
+            var requestpacket = new ClientToServerRequestInfo(header);
+            byte [] sendinforequestbytestream = requestpacket.serialize();
+            return sendinforequestbytestream;
+        }
+
         public static void SendHello(TxpClient client){
             var header = new Header(PacketType.Hello_C2S);
             Feature [] features = {Feature.SMTVerificationFeature, Feature.TestFeatrue1, Feature.TestFeatrue2};
