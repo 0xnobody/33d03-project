@@ -7,6 +7,7 @@ using _33D03.Shared.Pip;
 using System.ComponentModel;
 using System.Runtime.Versioning;
 using NLog.LayoutRenderers;
+using Microsoft.VisualBasic;
 
 namespace _33D03.Server
 {
@@ -87,50 +88,76 @@ namespace _33D03.Server
             else return 2;
         }
 
-        internal static void handlingvoteresults(TxpServer txpServer, byte [] data, int vote_counter, int satcount, int unsatcount, string filePath){
+        internal static void handlingvoteresults(TxpServer txpServer, byte[] data, int vote_counter, int satcount, int unsatcount, string filePath)
+        {
             Console.WriteLine();
-                        Console.WriteLine();
-                        Console.WriteLine();
-                        Console.WriteLine(txpServer.conversations.Count);
-                        Console.WriteLine();
-                        Console.WriteLine();
-                        Console.WriteLine();
-                        PacketAnswerVote voteresultpacket = PacketAnswerVote.FromBytes(data);
-                        logger.Info("Client answered vote");
-                        vote_counter += 1;
-                        ushort final = 0;
-                        if (voteresultpacket.GetResponse() == 1) satcount++;
-                        else if (voteresultpacket.GetResponse() == 0) unsatcount++;
-                        Console.WriteLine(vote_counter + " " + unsatcount + " " + satcount);
-                        Console.WriteLine(voteresultpacket.GetResponse());
-                        Console.WriteLine();
-                        Console.WriteLine();
-                        if (vote_counter == txpServer.conversations.Count)
-                        {
-                            final = PipServer.OrganizeData(txpServer, vote_counter, unsatcount, satcount);
-                            Guid tempguid = voteresultpacket.GetGuid();
-                            Header temphdr = new Header(PacketType.Vote_Broadcast_Vote_Result_S2C);
-                            PacketBroadcastVoteResult ResultS2Cpacket = new PacketBroadcastVoteResult(temphdr, tempguid, final);
-                            byte[] finaldata = ResultS2Cpacket.ToBytes();
-                            foreach (var conversationEntry in txpServer.conversations)
-                            {
-                                var conversation = conversationEntry.Value;
-                                txpServer.Send(finaldata, conversation);
-                            }
-                            vote_counter = 0;
-                            unsatcount = 0;
-                            satcount = 0;
-                            Console.WriteLine(vote_counter + " " + unsatcount + " " + satcount);
-                            logger.Info($"final packet result for guid {voteresultpacket.GetGuid()} is {final}");
-                            var ServerLogToWrite = new ServerVoteLog(voteresultpacket.GetGuid(), final);
-                            DateTime currentTime = DateTime.Now;
+            Console.WriteLine();
+            Console.WriteLine();
+            Console.WriteLine(txpServer.conversations.Count);
+            Console.WriteLine();
+            Console.WriteLine();
+            Console.WriteLine();
+            PacketAnswerVote voteresultpacket = PacketAnswerVote.FromBytes(data);
+            logger.Info("Client answered vote");
+            vote_counter += 1;
+            ushort final = 0;
+            if (voteresultpacket.GetResponse() == 1) satcount++;
+            else if (voteresultpacket.GetResponse() == 0) unsatcount++;
+            Console.WriteLine(vote_counter + " " + unsatcount + " " + satcount);
+            Console.WriteLine(voteresultpacket.GetResponse());
+            Console.WriteLine();
+            Console.WriteLine();
+            if (vote_counter == txpServer.conversations.Count)
+            {
+                final = PipServer.OrganizeData(txpServer, vote_counter, unsatcount, satcount);
+                Guid tempguid = voteresultpacket.GetGuid();
+                Header temphdr = new Header(PacketType.Vote_Broadcast_Vote_Result_S2C);
+                PacketBroadcastVoteResult ResultS2Cpacket = new PacketBroadcastVoteResult(temphdr, tempguid, final);
+                byte[] finaldata = ResultS2Cpacket.ToBytes();
+                foreach (var conversationEntry in txpServer.conversations)
+                {
+                    var conversation = conversationEntry.Value;
+                    txpServer.Send(finaldata, conversation);
+                }
+                vote_counter = 0;
+                unsatcount = 0;
+                satcount = 0;
+                Console.WriteLine(vote_counter + " " + unsatcount + " " + satcount);
+                logger.Info($"final packet result for guid {voteresultpacket.GetGuid()} is {final}");
+                var ServerLogToWrite = new ServerVoteLog(voteresultpacket.GetGuid(), final);
+                DateTime currentTime = DateTime.Now;
 
-                            using (StreamWriter writer = new StreamWriter(filePath, true))
-                            {
-                                writer.Write(currentTime + " " + ServerLogToWrite.GetGuid() + " ");
-                                writer.WriteLine(final);
-                            }
-                        }
+                using (StreamWriter writer = new StreamWriter(filePath, true))
+                {
+                    writer.Write(currentTime + " " + ServerLogToWrite.GetGuid() + " ");
+                    writer.WriteLine(final);
+                }
+            }
         }
+
+        internal static void ClientDisconnected(TxpClientConversation clientconversation, List<ServerListofClients> clientsList, TxpServer server)
+        {
+            logger.Info($"Client disconnected: CID {clientconversation.ConversationId}");
+
+            for (int i = clientsList.Count - 1; i >= 0; i--)
+            {
+                if (clientsList[i].convoid == clientconversation.ConversationId)
+                {
+                    clientsList.RemoveAt(i);
+                    // If you're sure there's only one client to remove, you can break after removing.
+                    break;
+                }
+            }
+            BroadcastUpdatedClientList(clientsList, server);
+        }
+
+        internal static void BroadcastUpdatedClientList(List<ServerListofClients> clientsList, TxpServer server)
+        {
+            Header hdr = new Header(PacketType.Client_Info);
+            var InfoToSend = new PacketInfo(hdr, clientsList.Count);
+            byte[] clientListBytes = InfoToSend.SerializeListOfServerListofClients(clientsList);
+            server.Broadcast(clientListBytes);
+        }
+
     }
 }

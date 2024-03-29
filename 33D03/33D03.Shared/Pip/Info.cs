@@ -22,6 +22,18 @@ namespace _33D03.Shared.Pip
         }
     }
 
+    public struct ClientToServerRequestInfo{
+        Header header;
+
+        public  ClientToServerRequestInfo(Header hdr){
+            header = hdr;
+        }
+
+        public byte[] serialize(){
+            return Serialization.StructureToByteArray(this);
+        }
+    }
+
     public struct PacketInfo
     {
         public Header header;
@@ -45,7 +57,6 @@ namespace _33D03.Shared.Pip
 
         public byte[] SerializeListOfServerListofClients(List<ServerListofClients> clients)
         {
-
             List<byte> bytesList = new List<byte>();
             // Serialize Header
             bytesList.AddRange(BitConverter.GetBytes(header.magic));

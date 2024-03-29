@@ -16,7 +16,19 @@ namespace _33D03.Client
         private static NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
 
 
-
+        public static void ProcessInput(object objclient){
+            TxpClient client = objclient as TxpClient;
+            string input = null;
+            while(input != "exit"){
+                input = Console.ReadLine();
+                if (input == "vote"){
+                    PipClient.VoteInit(client);
+                }
+                else if (input == "info"){
+                    PipClient.Client_request_info(client);
+                }
+            }
+        }
 
 
         private static void Main(string[] args)
@@ -36,12 +48,16 @@ namespace _33D03.Client
                     OnPacketRecievedHandler(client, data);
                 };
 
-                client.Start();
+                Thread inputThread = new Thread (new ParameterizedThreadStart(ProcessInput));
+                inputThread.Start(client);
 
+                Thread StartThread = new Thread (new ThreadStart(client.Start));
+                StartThread.Start();
 
                 PipClient.SendHello(client);
-                PipClient.VoteInit(client);
+                
 
+                
 
 
 

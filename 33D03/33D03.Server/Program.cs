@@ -19,6 +19,8 @@ namespace _33D03.Server
         private static NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
 
 
+
+
         private static void Main(string[] args)
         {
             try
@@ -52,6 +54,10 @@ namespace _33D03.Server
                         PipServer.HelloRecieved(txpServer, clientState, ServerclientsList, data, clientState.ConversationId);
                         PipServer.SendInfo(txpServer, clientState, ServerclientsList, data, clientState.ConversationId);
                     }
+                    else if (receivedHeader.type == PacketType.Client_request_info)
+                    {
+                        PipServer.SendInfo(txpServer, clientState, ServerclientsList, data, clientState.ConversationId);
+                    }
                     else if (receivedHeader.type == PacketType.Vote_Request_Vote_C2S)
                     {
                         vote_counter = 0;
@@ -62,10 +68,15 @@ namespace _33D03.Server
                     }
                     else if (receivedHeader.type == PacketType.Vote_Answer_Vote_C2S)
                     {
-                        PipServer.handlingvoteresults(txpServer,data, vote_counter,  satcount,  unsatcount,filePath);
+                        PipServer.handlingvoteresults(txpServer, data, vote_counter, satcount, unsatcount, filePath);
                     }
                 };
 
+                txpServer.OnClientDisconnected += (clientState) =>
+                {
+                    PipServer.ClientDisconnected(clientState, ServerclientsList, txpServer);
+                    PipServer.BroadcastUpdatedClientList(ServerclientsList, txpServer);
+                };
 
                 /*// Logs the receipt of a packet using Trace level, including the client's ID and the packet data as a hex string.
                 logger.Trace($"Received packet from CID {clientState.ConversationId} with data: {}");
