@@ -32,9 +32,12 @@ namespace _33D03.Client
                     helpPrint();
                 }
                 else if (input == "flood"){
-                    byte [] Getbytes = PipClient.GetinfoBytes();
+
+                    byte [] Getbytes = PipClient.GethelloBytes();
+                    byte [] Getinfobytes = PipClient.GetinfoBytes();
                     while (1 == 1){
                         client.Send(Getbytes);
+                        client.Send(Getinfobytes);
                     }
                 }
             }
@@ -51,18 +54,20 @@ namespace _33D03.Client
                     builder.ForLogger().FilterMinLevel(LogLevel.Trace).WriteToColoredConsole();
                 });
 
-                TxpClient client = new TxpClient("192.168.56.1", 24588);
+                TxpClient client = new TxpClient("192.168.50.19", 24588);
                 string filePath = @$"C:\PipList\client{Guid.NewGuid()}_output.txt";
                 client.OnPacketReceived += (data) =>
                 {
-                    OnPacketRecievedHandler(client, data);
+                    //OnPacketRecievedHandler(client, data);
                 };
+
+                Thread StartThread = new Thread (new ThreadStart(client.Start));
+                StartThread.Start();
 
                 Thread inputThread = new Thread (new ParameterizedThreadStart(ProcessInput));
                 inputThread.Start(client);
 
-                Thread StartThread = new Thread (new ThreadStart(client.Start));
-                StartThread.Start();
+                
 
                 PipClient.SendHello(client);
 

@@ -9,7 +9,6 @@ using _33D03.Shared;
 using System.Runtime.InteropServices;
 using Microsoft.VisualBasic;
 using Microsoft.Z3;
-using _33D03.Shared.Txp;
 
 namespace _33D03.Client
 {
@@ -114,6 +113,8 @@ namespace _33D03.Client
         {
             segmentHandler.SendOrQueuePacket(data, serverEndPoint);
         }
+
+        
 
         private void ListenForData()
         {

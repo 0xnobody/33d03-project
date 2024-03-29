@@ -58,6 +58,15 @@ namespace _33D03.Client
             return sendinforequestbytestream;
         }
 
+        public static byte [] GethelloBytes(){
+            var header = new Header(PacketType.Hello_C2S);
+            Feature [] features = {Feature.SMTVerificationFeature, Feature.TestFeatrue1, Feature.TestFeatrue2};
+            var hellopacket = new PacketHello(header);
+            hellopacket.numFeatures = features.Length;
+            byte [] hellosendpacket = hellopacket.Serialize(features);
+            return hellosendpacket;
+        }
+
         public static void SendHello(TxpClient client){
             var header = new Header(PacketType.Hello_C2S);
             Feature [] features = {Feature.SMTVerificationFeature, Feature.TestFeatrue1, Feature.TestFeatrue2};
