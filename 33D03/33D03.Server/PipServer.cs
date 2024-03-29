@@ -1,174 +1,126 @@
-using Nlog;
+using NLog;
 using System;
 using System.Text;
 using _33D03.Server;
+using System.Security.Cryptography.X509Certificates;
+using _33D03.Shared.Pip;
+using System.ComponentModel;
+using System.Runtime.Versioning;
+using NLog.LayoutRenderers;
 
-internal class ServerPIP
+namespace _33D03.Server
 {
-    private TxpServer txpServer;
 
-    private int satResults = 0;
-    private int unsatResults = 0;
-    private int totalClients = 0;
-    private int timeouts = 0;
-    private int syntaxErrors = 0;
-    private int responses = 0;
-    private double calculation = 0;
-    private string result;
-    private Random random = new Random();
-    private static Logger logger = LogManager.GetCurrentClassLogger();
-
-    public ServerPIP(TxpServer txpServer)
+    public struct ServerVoteLog
     {
-        this.txpServer = txpServer;
-    }
+        Guid servervoteguid;
+        ushort result;
 
-    public void Start()
-    {
-        txpServer.OnPacketReceived += TxpServer_OnPacketReceived;
-        txpServer.Start();
-        ServerVoteInitHandler();
-    }
-
-    private void TxpServer_OnPacketReceived(TxpClientConversation clientconversation, byte[] data)
-    {
-        string resp = Encoding.UTF8.GetString(data);
-        logger.Info($"Receoved response from client {clientconversation.LastEndPoint}: {resp}");
-
-        ProcessResp(resp);
-    }
-
-    private void ServerVoteInitHandler(TxpServer server)
-    {
-        string problem = ProblemGeneration(); //generate a random prob
-        byte[] problemToSend = Encoding.UF8.GetBytes(problem); //convert from string to bits
-        txpServer.send(problemToSend, clientStatus); //send packet in bits
-        logger.Info($"Sent Problem to clients: {problem}");
-    }
-
-    //function to generate problems with random operands and aperators of different lenghts in SMT format
-    static string ProblemGeneration()
-    {
-
-        int numOperands = random.Next(2, 10); //randomly generate number of operands between 2 and 9
-        List<int> operands = new List<int>(); //list to store operands
-        List<string> operators = new List<string>();//list to store operators
-
-        //Generate and store operands
-        for (int i = 0; i < numOperands; i++)
+        public ServerVoteLog(Guid inputGuid, ushort rest)
         {
-            operands.Add(random.Next(-255, 255)); //randomly generate operands
+            servervoteguid = inputGuid;
+            result = rest;
         }
-
-        for (int i = 0; i < numOperands - 1; i++)
+        public Guid GetGuid()
         {
-            string[] operators = { "+", "-", "*", "/" };
-            string selectedOp = operators[random.Next(operators.Length)];
-            operands.Add(selectedOp); //add selected operators to the list
+            return servervoteguid;
         }
-        StringBuilder equationBuilder = new StringBuilder();
-        equationBuilder.Append("(assert ");
-        for (int i = 0; i < numOperands - 1; i++)
+        public ushort GetResult()
         {
-            equationBuilder.Append("(");
-            equationBuilder.Append(operators[i]);
-            equationBuilder.Append(" ");
-            equationBuilder.Append(operands[i]);
-            equationBuilder.Append(" ");
-            equationBuilder.Append(operands[i+1]);
-            equationBuilder.Append(")");
+            return result;
         }
-        equationBuilder.Append(")");
+    }
 
-        //calculate the total of the equation
-        int total = operands[0];
-        for (int i = 0; i < numOperands - 1; i++)
+    public struct ServerListofClients
+    {
+        public uint convoid;
+        public int numFeatures;
+        public Feature[] features;
+
+        public ServerListofClients(uint id, int num, Feature[] feature)
         {
-            int operand = operands[i + 1];
-            string op = operators[i];
-            switch (op)
+            convoid = id;
+            numFeatures = num;
+            features = feature;
+        }
+    }
+
+
+    public static class PipServer
+    {
+
+        private static NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
+        internal static void PipServerBroadcastQuestion(TxpServer server, byte[] data)
+        {
+            (PacketRequestVote recievedpacktestvote, string question) = PacketRequestVote.Deserialize(data);
+            var sendQuestion = question;
+            var questionlength = (uint)question.Length;
+            var headertoclient = new Header(PacketType.Vote_Broadcast_Vote_S2C);
+            Guid voteGuid = Guid.NewGuid();
+            var Vote_init_packet = new PacketBroadcastVote(headertoclient, voteGuid, questionlength);
+            var voteinitbytes = Vote_init_packet.Serialize(question);
+            foreach (var conversationEntry in server.conversations)
             {
-                case "+":
-                    total += operand;
-                    break;
-                case "-":
-                    total -= operand;
-                    break;
-                case "*":
-                    total *= operand;
-                    break;
-                case "/":
-                    if (operand != 0)
-                    {
-                        total /= operand;
-                    }
-                    else
-                    {
-                        total += random.Next(-10, 10) + 1; //choose a non-zero operand (this will cause the clients to return unsat as they will deal with this issue in dif ways
-                    }
-                    break;
+                var conversation = conversationEntry.Value;
+                server.Send(voteinitbytes, conversation);
+                logger.Info("Client initiate vote requst with SMTLIB question" + question + "Generating Vote with ID " + voteGuid);
             }
         }
-        equationBuilder.Append("(ssert (= result ");
-        equationBuilder.Append(total);
-        equationBuilder.Append("))");
 
-        return equationBuilder.ToString();
-    }
+        struct questionID
+        {
 
-    private void ProcessResp(string resp)
-    {
-        if (resp.ToLower() == "satisfied")
-        {
-            satResults++;
-        }
-        else if (resp.ToLower() == "unstatisfied")
-        {
-            unsatResults++;
-        }
-        else if (resp.ToLower() == "timeout")
-        {
-            timeouts ++;
-        }
-        else if (resp.ToLower() == "sytax error")
-        {
-            syntaxErrors++;
         }
 
-        responses++; //increase resp counter
-
-        if (responses == totalClients)
+        static void AddMoreClients(List<ServerListofClients> clientsList, uint convoid, int numFeatures, Feature[] features)
         {
-            calculateResult();
+            clientsList.Add(new ServerListofClients(convoid, numFeatures, features));
         }
-        //This is to reduce the amount of time that the server has to wait if there is already an uncontested winner
-        else if (responses < totalClients)
+
+        internal static void HelloRecieved(TxpServer server, List<ServerListofClients> clientsList, byte[] data, uint convoid)
         {
-            if (satResults > (totalClients / 2))
+            Header header = PacketHello.FromBytes(data);
+            (PacketHello structtest, Feature[] features) = PacketHello.Deserialize(data);
+            AddMoreClients(clientsList, convoid, structtest.numFeatures, features);
+            Console.WriteLine($"ID: {convoid}, NumFeatures: {structtest.numFeatures}, features: {String.Join(", ", features)}");
+            Console.WriteLine();
+            Console.WriteLine();
+            Console.WriteLine();
+            Console.WriteLine("List of Packets:");
+            foreach (var ServerListofClients in clientsList)
             {
-                result = "Satisfied";
+                Console.WriteLine($"ID: {ServerListofClients.convoid}, NumFeatures: {ServerListofClients.numFeatures}, features: {String.Join(", ", ServerListofClients.features)}");
             }
-            else if (unsatResults > (totalClients / 2))
-            {
-                result = "Unsatisfied";
-            }
+            Console.WriteLine();
+            Console.WriteLine();
+            Console.WriteLine();
         }
-    }
 
-    private void calculateResult()
-    {
-        int ratio = satResults / totalClients;
-        if (ratio > totalClients / 2)
+        internal static ushort OrganizeData(TxpServer server, int satcount, int unsatcount, int total)
         {
-            result = "Satisfied";
+            if (satcount > unsatcount) return 1;
+            else if (satcount <= unsatcount) return 0;
+            else return 2;
         }
-        else if (ratio < totalClients / 2)
+
+        internal static void ServerCalculatesVotes()
         {
-            result = "Unstatisfied";
+
+
+
         }
-        else if (ratio == totalClients / 2)
+        internal static void ClientDisconnected(TxpClientConversation clientconversation, List<ServerListofClients> clientsList)
         {
-            result = "A TIE??";
+            logger.Info($"Client disconnected: CID {clientConversation.convoid}");
+
+            for(int i = 0; i < clientsList.Count; i++)//iterates through clientlist
+            {
+                if (clientsList[i].convoid == clientconversation.convoid)
+                {
+                    clientsList.RemoveAt(i);
+                    break; //Exits loop once the client is found and removed from list
+                }
+            }
         }
     }
 }
