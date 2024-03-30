@@ -86,7 +86,13 @@ namespace _33D03.Client
             var Vote_init_packet = new PacketRequestVote(header, voteGuid, questionlength);
             var voteinitbytes = Vote_init_packet.Serialize(question);
             client.Send(voteinitbytes);
+            Console.WriteLine();
+            Console.WriteLine();
+            Console.WriteLine();
             logger.Info("Client initiate vote requst with SMTLIB question" + question);
+            Console.WriteLine();
+            Console.WriteLine();
+            Console.WriteLine();
         }
 
         public static void ClientAnswerVote(TxpClient client, string question, Guid voteID)

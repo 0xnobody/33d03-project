@@ -35,6 +35,7 @@ namespace _33D03.Server
                 // Initialize a new TxpServer instance listening on port 1151.
                 TxpServer txpServer = new TxpServer(24588);
                 List<ServerListofClients> ServerclientsList = new List<ServerListofClients>();
+                List<ServerVoteId> ServerActiveQuestionList = new List<ServerVoteId>();
 
                 // Subscribe to the OnPacketReceived event with an anonymous method to handle incoming packets.
 
@@ -64,11 +65,12 @@ namespace _33D03.Server
                         unsatcount = 0;
                         satcount = 0;
                         PipServer.SendInfo(txpServer, clientState, ServerclientsList, data, clientState.ConversationId);
-                        PipServer.PipServerBroadcastQuestion(txpServer, data);
+                        PipServer.PipServerBroadcastQuestion(txpServer, data, ServerActiveQuestionList);
+
                     }
                     else if (receivedHeader.type == PacketType.Vote_Answer_Vote_C2S)
                     {
-                        PipServer.handlingvoteresults(txpServer, data, vote_counter, satcount, unsatcount, filePath);
+                        PipServer.handlingvoteresults(txpServer, ServerActiveQuestionList, data, vote_counter, satcount, unsatcount, filePath);
                     }
                 };
 

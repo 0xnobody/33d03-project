@@ -8,6 +8,25 @@ using System.Threading.Tasks; // Importing the namespace for types that simplify
 
 namespace _33D03.Shared.Pip // Declaring a namespace for organizing related code and reducing naming conflicts.
 {
+    public struct ServerVoteId{
+        public Guid voteid;
+        public string question;
+
+        public ServerVoteId(Guid id, string qustn){
+            voteid = id;
+            question = qustn;
+        }
+
+        public static void AddVoteToList(List<ServerVoteId> voteList, Guid voteid, string question){
+            voteList.Add(new ServerVoteId(voteid, question));
+        }
+        public static void DeleteVoteFromList(){
+
+        }
+    }
+
+
+
     [StructLayout(LayoutKind.Sequential, Pack = 1)] // Applying an attribute to control the physical layout of the data fields in this struct when it is passed to unmanaged code.
     public struct PacketBroadcastVote // Declaring a public structure named PacketBroadcastVote.
     {

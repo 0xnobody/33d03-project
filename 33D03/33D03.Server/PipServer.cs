@@ -38,21 +38,50 @@ namespace _33D03.Server
 
         private static NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
 
-        internal static void PipServerBroadcastQuestion(TxpServer server, byte[] data)
+        internal static void PipServerBroadcastQuestion(TxpServer server, byte[] data, List<ServerVoteId> ServerActiveQuestionList)
         {
+            foreach (ServerVoteId ServerVoteId in ServerActiveQuestionList)
+            {
+                Console.WriteLine($"ServerVoteID{ServerVoteId.voteid}, Question{ServerVoteId.question}");
+            }
             (PacketRequestVote recievedpacktestvote, string question) = PacketRequestVote.Deserialize(data);
             var sendQuestion = question;
             var questionlength = (uint)question.Length;
             var headertoclient = new Header(PacketType.Vote_Broadcast_Vote_S2C);
-            Guid voteGuid = Guid.NewGuid();
-            var Vote_init_packet = new PacketBroadcastVote(headertoclient, voteGuid, questionlength);
-            var voteinitbytes = Vote_init_packet.Serialize(question);
-            foreach (var conversationEntry in server.conversations)
+            Guid voteGuid = recievedpacktestvote.Getguid();
+            bool exist = false;
+            foreach (ServerVoteId ServerVoteId in ServerActiveQuestionList)
             {
-                var conversation = conversationEntry.Value;
-                server.Send(voteinitbytes, conversation);
-                logger.Info("Client initiate vote requst with SMTLIB question" + question + "Generating Vote with ID " + voteGuid);
+                Console.WriteLine("FALSE REPORTED");
+                if (ServerVoteId.voteid == voteGuid)
+                {
+                    exist = true;
+                }
             }
+            if (exist == false)
+            {
+                var Vote_init_packet = new PacketBroadcastVote(headertoclient, voteGuid, questionlength);
+                var voteinitbytes = Vote_init_packet.Serialize(question);
+                foreach (var conversationEntry in server.conversations)
+                {
+                    var conversation = conversationEntry.Value;
+                    server.Send(voteinitbytes, conversation);
+                    logger.Info("Client initiate vote requst with SMTLIB question" + question + "Generating Vote with ID " + voteGuid);
+
+                }
+                ServerVoteId.AddVoteToList(ServerActiveQuestionList, voteGuid, question);
+                Console.WriteLine();
+                Console.WriteLine();
+                Console.WriteLine();
+                foreach (ServerVoteId ServerVoteId in ServerActiveQuestionList)
+                {
+                    Console.WriteLine($"ServerVoteID{ServerVoteId.voteid}, Question{ServerVoteId.question}");
+                }
+                Console.WriteLine();
+                Console.WriteLine();
+                Console.WriteLine();
+            }
+
         }
 
 
@@ -74,7 +103,20 @@ namespace _33D03.Server
         {
             Header header = PacketHello.FromBytes(data);
             (PacketHello structtest, Feature[] features) = PacketHello.Deserialize(data);
-            AddMoreClients(clientsList, convoid, structtest.numFeatures, features);
+            bool exists = false;
+            foreach (var ServerListofClients in clientsList)
+            {
+                if (ServerListofClients.convoid == clientState.ConversationId)
+                {
+                    exists = true;
+                    break;
+                }
+            }
+            if (exists == true)
+            {
+                AddMoreClients(clientsList, convoid, structtest.numFeatures, features);
+            }
+
             var sendhdr = new Header(PacketType.Hello_S2C);
             byte[] hellos2cdata = sendhdr.ToBytes();
             server.Send(hellos2cdata, clientState);
@@ -88,7 +130,7 @@ namespace _33D03.Server
             else return 2;
         }
 
-        internal static void handlingvoteresults(TxpServer txpServer, byte[] data, int vote_counter, int satcount, int unsatcount, string filePath)
+        internal static void handlingvoteresults(TxpServer txpServer, List<ServerVoteId> listvote, byte[] data, int vote_counter, int satcount, int unsatcount, string filePath)
         {
             Console.WriteLine();
             Console.WriteLine();
@@ -109,8 +151,24 @@ namespace _33D03.Server
             Console.WriteLine();
             if (vote_counter == txpServer.conversations.Count)
             {
-                final = PipServer.OrganizeData(txpServer, vote_counter, unsatcount, satcount);
+                final = PipServer.OrganizeData(txpServer, unsatcount, satcount, vote_counter);
                 Guid tempguid = voteresultpacket.GetGuid();
+
+
+                int listcount = listvote.Count;
+
+                for (int i = listvote.Count - 1; i >= 0; i--)
+                {
+                    if (listvote[i].voteid == tempguid)
+                    {
+                        listvote.RemoveAt(i); 
+                        break; 
+                    }
+                }
+
+
+
+
                 Header temphdr = new Header(PacketType.Vote_Broadcast_Vote_Result_S2C);
                 PacketBroadcastVoteResult ResultS2Cpacket = new PacketBroadcastVoteResult(temphdr, tempguid, final);
                 byte[] finaldata = ResultS2Cpacket.ToBytes();

@@ -54,11 +54,11 @@ namespace _33D03.Client
                     builder.ForLogger().FilterMinLevel(LogLevel.Trace).WriteToColoredConsole();
                 });
 
-                TxpClient client = new TxpClient("192.168.50.19", 24588);
+                TxpClient client = new TxpClient("127.0.0.1", 24588);
                 string filePath = @$"C:\PipList\client{Guid.NewGuid()}_output.txt";
                 client.OnPacketReceived += (data) =>
                 {
-                    //OnPacketRecievedHandler(client, data);
+                    OnPacketRecievedHandler(client, data);
                 };
 
                 Thread StartThread = new Thread (new ThreadStart(client.Start));
@@ -91,6 +91,7 @@ namespace _33D03.Client
                 Console.WriteLine("vote -- initiate vote");
                 Console.WriteLine("info -- request Client list from server");
                 Console.WriteLine("exit -- exits");       
+                Console.WriteLine("flood -- floods server, but client uses more resources, even when ignoring incopming packets...");
         }
 
 

@@ -86,9 +86,9 @@ namespace _33D03.Shared.Pip // Declaring a namespace for organizing related code
         {
             return questionLength.ToString();
         }
-        public string Getguid()
+        public Guid Getguid()
         {
-            return voteGuid.ToString();
+            return voteGuid;
         }
     }
 
