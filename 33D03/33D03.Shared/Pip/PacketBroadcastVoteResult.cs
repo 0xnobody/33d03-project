@@ -41,6 +41,44 @@ namespace _33D03.Shared.Pip // Declaring a namespace for organizing related code
             return Serialization.ByteArrayToStructure<PacketBroadcastVoteResult>(data); // Returning a PacketBroadcastVoteResult struct created from the byte array.
         }
 
+        public byte[] Serialize(string resultStats)
+        {
+            var resultStatsBytes = Encoding.UTF8.GetBytes(resultStats);
+            var resultStatsLength = (uint)resultStatsBytes.Length;
+            int totalSize = Marshal.SizeOf(typeof(PacketBroadcastVoteResult)) + resultStatsBytes.Length;
+            var completedPacketBytes = new byte[totalSize];
+            byte[] structBytes = ToBytes();
+            Buffer.BlockCopy(structBytes, 0, completedPacketBytes, 0, structBytes.Length);
+            Buffer.BlockCopy(resultStatsBytes, 0, completedPacketBytes, structBytes.Length, resultStatsBytes.Length);
+
+            return completedPacketBytes;
+        }
+
+        public static (PacketBroadcastVoteResult, string) Deserialize(byte[] data)
+        {
+            // Extract the PacketBroadcastVoteResult structure
+            int sizeOfPacketBroadcastVoteResult = Marshal.SizeOf(typeof(PacketBroadcastVoteResult));
+            IntPtr ptr = Marshal.AllocHGlobal(sizeOfPacketBroadcastVoteResult);
+            try
+            {
+                Marshal.Copy(data, 0, ptr, sizeOfPacketBroadcastVoteResult);
+                PacketBroadcastVoteResult packetBroadcastVoteResult = (PacketBroadcastVoteResult)Marshal.PtrToStructure(ptr, typeof(PacketBroadcastVoteResult));
+
+                // Calculate the start index and length of the resultStats string
+                int resultStatsStartIndex = sizeOfPacketBroadcastVoteResult;
+                int resultStatsLength = data.Length - resultStatsStartIndex; // Assuming the rest of the array is the resultStats
+
+                // Extract the resultStats string
+                string resultStats = Encoding.UTF8.GetString(data, resultStatsStartIndex, resultStatsLength);
+
+                return (packetBroadcastVoteResult, resultStats);
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(ptr);
+            }
+        }
+
         public byte[] Serialize() // Defining a method to serialize the struct into a byte array.
         {
             return ToBytes(); // Returning the byte array representation of the struct.

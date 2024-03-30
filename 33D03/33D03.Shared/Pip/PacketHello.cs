@@ -11,9 +11,9 @@ namespace _33D03.Shared.Pip // Declaring a namespace for organizing related code
 {
     public enum Feature : ushort // Declaring a public enumeration named Feature, with underlying type ushort.
     {
-        SMTVerificationFeature = 0, // Defining an enumeration member named SMTVerificationFeature with value 0.
-        TestFeatrue1 = 1,
-        TestFeatrue2 = 2,
+        SMTVerificationFeature = 1, // Defining an enumeration member named SMTVerificationFeature with value 0.
+        TestFeatrue1 = 2,
+        TestFeatrue2 = 3,
     }
 
 
@@ -69,10 +69,11 @@ namespace _33D03.Shared.Pip // Declaring a namespace for organizing related code
             }
 
             var completedPacketBytes = new byte[Marshal.SizeOf(this) + numFeatures * 2]; // Creating a byte array to hold the serialized struct and features array.
-            Buffer.BlockCopy(ToBytes(), 0, completedPacketBytes, 0, Marshal.SizeOf(this)); // Copying the byte array representation of the struct into the completedPacketBytes array.
-            for (int i = 0; i < numFeatures; i++) // Looping over each feature.
+            Buffer.BlockCopy(ToBytes(), 0, completedPacketBytes, 0, Marshal.SizeOf(typeof(PacketHello))); // Assuming ToBytes() serializes the PacketHello struct
+            int startIndexOfFeatures = Marshal.SizeOf(typeof(PacketHello)); // Adjust if header needs specific handling
+            for (int i = 0; i < numFeatures; i++)
             {
-                Buffer.BlockCopy(BitConverter.GetBytes((ushort)features[i]), 0, completedPacketBytes, Marshal.SizeOf(header) + i * 2, 2); // Copying the byte array representation of each feature into the completedPacketBytes array.
+                Buffer.BlockCopy(BitConverter.GetBytes((ushort)features[i]), 0, completedPacketBytes, startIndexOfFeatures + i * 2, 2);
             }
 
             return completedPacketBytes; // Returning the completed byte array.

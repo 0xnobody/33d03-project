@@ -31,6 +31,9 @@ namespace _33D03.Client
                 else if (input == "help"){
                     helpPrint();
                 }
+                else if (input == "hello"){
+                    PipClient.SendHello(client);
+                }
                 else if (input == "flood"){
 
                     byte [] Getbytes = PipClient.GethelloBytes();
@@ -120,7 +123,16 @@ namespace _33D03.Client
         private static void OnVoteBroadCastVoteS2C(string filePath, byte[] data)
         {
             logger.Trace($"Received Reuslt packet from server with dat: {PacketBroadcastVoteResult.FromBytes(data)}");
-            PacketBroadcastVoteResult voteResult = PacketBroadcastVoteResult.FromBytes(data);
+            (PacketBroadcastVoteResult voteResult, string resultStats )= PacketBroadcastVoteResult.Deserialize(data);
+            Console.WriteLine();
+            Console.WriteLine();
+            Console.WriteLine();
+            Console.WriteLine();
+            Console.WriteLine(resultStats);
+            Console.WriteLine();
+            Console.WriteLine();
+            Console.WriteLine();
+            Console.WriteLine();
             DateTime currentTime = DateTime.Now;
 
 

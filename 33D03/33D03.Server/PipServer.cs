@@ -2,6 +2,7 @@
 using System;
 using System.Text;
 using _33D03.Server;
+using System.Timers;
 using System.Security.Cryptography.X509Certificates;
 using _33D03.Shared.Pip;
 using System.ComponentModel;
@@ -91,6 +92,7 @@ namespace _33D03.Server
             var infohdr = new Header(PacketType.Client_Info);
             var infopack = new PacketInfo(infohdr, clientsList.Count);
             byte[] sendinfobyte = infopack.SerializeListOfServerListofClients(clientsList);
+            Console.WriteLine($"sent client info{infopack.header} {infopack.numClients}");
             server.Send(sendinfobyte, clientState);
         }
 
@@ -112,7 +114,7 @@ namespace _33D03.Server
                     break;
                 }
             }
-            if (exists == true)
+            if (exists == false)
             {
                 AddMoreClients(clientsList, convoid, structtest.numFeatures, features);
             }
@@ -120,6 +122,16 @@ namespace _33D03.Server
             var sendhdr = new Header(PacketType.Hello_S2C);
             byte[] hellos2cdata = sendhdr.ToBytes();
             server.Send(hellos2cdata, clientState);
+            Console.WriteLine();
+            Console.WriteLine();
+            Console.WriteLine("list");
+            foreach (var ServerListofClients in clientsList)
+            {
+                Console.WriteLine(ServerListofClients.convoid + " " + ServerListofClients.numFeatures + $"{String.Join(", ", ServerListofClients.features)}");
+            }
+            Console.WriteLine();
+            Console.WriteLine();
+            Console.WriteLine();
             //SendInfo(server,clientState ,clientsList,  data,  convoid);
         }
 
@@ -130,57 +142,60 @@ namespace _33D03.Server
             else return 2;
         }
 
-        internal static void handlingvoteresults(TxpServer txpServer, List<ServerVoteId> listvote, byte[] data, int vote_counter, int satcount, int unsatcount, string filePath)
+        internal static void handlingvoteresults(TxpServer txpServer, ref List<ServerVoteId> listvote, byte[] data, string filePath)
         {
-            Console.WriteLine();
-            Console.WriteLine();
-            Console.WriteLine();
-            Console.WriteLine(txpServer.conversations.Count);
-            Console.WriteLine();
-            Console.WriteLine();
-            Console.WriteLine();
             PacketAnswerVote voteresultpacket = PacketAnswerVote.FromBytes(data);
             logger.Info("Client answered vote");
-            vote_counter += 1;
+            Console.WriteLine("vote counter + 1");
             ushort final = 0;
-            if (voteresultpacket.GetResponse() == 1) satcount++;
-            else if (voteresultpacket.GetResponse() == 0) unsatcount++;
-            Console.WriteLine(vote_counter + " " + unsatcount + " " + satcount);
-            Console.WriteLine(voteresultpacket.GetResponse());
-            Console.WriteLine();
-            Console.WriteLine();
-            if (vote_counter == txpServer.conversations.Count)
+            int j = 0;
+            foreach (var ServerVoteID in listvote)
             {
-                final = PipServer.OrganizeData(txpServer, unsatcount, satcount, vote_counter);
+                
+                if (ServerVoteID.voteid == voteresultpacket.GetGuid())
+                {
+                    break;
+                }
+                j++;
+            }
+            ServerVoteId temp = listvote[j];
+            if (voteresultpacket.GetResponse() == 1) temp.sat_counter++;
+            else if (voteresultpacket.GetResponse() == 0) temp.unsat_counter++;
+            temp.vote_counter += 1;
+            listvote[j] = temp;
+            Console.WriteLine(listvote[j].vote_counter + " " + listvote[j].unsat_counter + " " + listvote[j].sat_counter);
+            Console.WriteLine(voteresultpacket.GetResponse());
+            Console.WriteLine(txpServer.conversations.Count);
+            Console.WriteLine();
+            if (listvote[j].vote_counter == txpServer.conversations.Count)
+            {
+                final = PipServer.OrganizeData(txpServer, listvote[j].unsat_counter, listvote[j].sat_counter, listvote[j].vote_counter);
                 Guid tempguid = voteresultpacket.GetGuid();
 
 
                 int listcount = listvote.Count;
-
+                int vote_count = listvote[j].vote_counter;
+                int sat_counter = listvote[j].sat_counter;
+                int unsat_counter = listvote[j].unsat_counter;
                 for (int i = listvote.Count - 1; i >= 0; i--)
                 {
                     if (listvote[i].voteid == tempguid)
                     {
-                        listvote.RemoveAt(i); 
-                        break; 
+                        listvote.RemoveAt(i);
+                        break;
                     }
                 }
 
-
-
-
                 Header temphdr = new Header(PacketType.Vote_Broadcast_Vote_Result_S2C);
                 PacketBroadcastVoteResult ResultS2Cpacket = new PacketBroadcastVoteResult(temphdr, tempguid, final);
-                byte[] finaldata = ResultS2Cpacket.ToBytes();
+                string resultStats = $"Total votes: {vote_count}, Satcount: {sat_counter}, Unsatcount: {unsat_counter}";
+                byte[] finaldata = ResultS2Cpacket.Serialize(resultStats);
                 foreach (var conversationEntry in txpServer.conversations)
                 {
                     var conversation = conversationEntry.Value;
                     txpServer.Send(finaldata, conversation);
                 }
-                vote_counter = 0;
-                unsatcount = 0;
-                satcount = 0;
-                Console.WriteLine(vote_counter + " " + unsatcount + " " + satcount);
+                Console.WriteLine(vote_count + " " + unsat_counter + " " + sat_counter);
                 logger.Info($"final packet result for guid {voteresultpacket.GetGuid()} is {final}");
                 var ServerLogToWrite = new ServerVoteLog(voteresultpacket.GetGuid(), final);
                 DateTime currentTime = DateTime.Now;

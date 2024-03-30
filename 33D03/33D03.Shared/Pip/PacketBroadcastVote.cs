@@ -11,10 +11,18 @@ namespace _33D03.Shared.Pip // Declaring a namespace for organizing related code
     public struct ServerVoteId{
         public Guid voteid;
         public string question;
+        public int vote_counter;
+        public int sat_counter;
+        public int unsat_counter;
+        public int timeout_counter;
 
         public ServerVoteId(Guid id, string qustn){
             voteid = id;
             question = qustn;
+            vote_counter = 0;
+            sat_counter = 0;
+            unsat_counter = 0;
+            timeout_counter = 0;
         }
 
         public static void AddVoteToList(List<ServerVoteId> voteList, Guid voteid, string question){

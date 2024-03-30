@@ -73,8 +73,6 @@ namespace _33D03.Shared.Pip // Declaring a namespace for organizing related code
             {
                 Marshal.FreeHGlobal(ptr);
             }
-
-
         }
 
         public string GetQuestion(byte[] fullPacketData) // Defining a method to extract the question string from a serialized PacketRequestVote.
