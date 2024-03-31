@@ -95,15 +95,31 @@ namespace _33D03.Client
             var solver = z3Ctx.MkSimpleSolver();
             solver.Assert(model);
 
-            if (solver.Check() == Status.SATISFIABLE)
+            //Cancellaltion token with timeout of 5 seconds
+            CancellationTokenSource cancellationTokenSource  = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+            CancellationToken cancellationToken = cancellationTokenSource.Token;
+
+            ushort result = 2; //default value for result, this is returned if the result is inconclusive
+
+            var task = Task.Run(() =>
             {
-                return 1;
-            }
-            else if (solver.Check() == Status.UNSATISFIABLE)
+                if (solver.Check() == Status.SATISFIABLE)
+                {
+                    result = 1; //1 if sat
+                }
+                else if (solver.Check() == Status.UNSATISFIABLE)
+                {
+                    result = 0; //0 is unsat
+                }
+            });
+
+            if (!task.Wait(TimeSpan.FromSeconds(5)))
             {
-                return 0;
+                cancellationToken.Cancel(); //if timeout is reached, cancelled calculations
+                result = 3; //3 if timeout reached
             }
-            else return 2;
+
+            return result;
         }
     }
 }
