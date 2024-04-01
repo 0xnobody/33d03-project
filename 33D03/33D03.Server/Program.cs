@@ -1,4 +1,4 @@
-﻿
+
 using NLog;
 using System;
 using System.Collections.Generic;
@@ -19,6 +19,8 @@ namespace _33D03.Server
         private static NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
 
 
+
+
         private static void Main(string[] args)
         {
             try
@@ -33,81 +35,16 @@ namespace _33D03.Server
                 // Initialize a new TxpServer instance listening on port 1151.
                 TxpServer txpServer = new TxpServer(24588);
                 List<ServerListofClients> ServerclientsList = new List<ServerListofClients>();
+                List<ServerVoteId> ServerActiveQuestionList = new List<ServerVoteId>();
 
                 // Subscribe to the OnPacketReceived event with an anonymous method to handle incoming packets.
 
-                int vote_counter = 0;
-                int unsatcount = 0;
-                int satcount = 0;
                 string filePath = @"C:\PipList\server_output.txt";
 
                 txpServer.OnPacketReceived += (clientState, data) =>
                 {
-                    var receivedHeader = Header.FromBytes(data);
-
-                    int connectedclients = txpServer.conversations.Count;
-                    logger.Trace($"Received packet from CID {clientState.ConversationId} of type {receivedHeader.type}");
-                    if (receivedHeader.type == PacketType.Hello_C2S)
-                    {
-                        PipServer.HelloRecieved(txpServer,ServerclientsList, data, clientState.ConversationId);
-                    }
-                    else if (receivedHeader.type == PacketType.Vote_Request_Vote_C2S)
-                    {
-                        vote_counter = 0;
-                        unsatcount = 0;
-                        satcount = 0;
-                        PipServer.PipServerBroadcastQuestion(txpServer, data);
-
-                    }
-                    else if (receivedHeader.type == PacketType.Vote_Answer_Vote_C2S)
-                    {
-                        Console.WriteLine();
-                        Console.WriteLine();
-                        Console.WriteLine();
-                        Console.WriteLine(txpServer.conversations.Count);
-                        Console.WriteLine();
-                        Console.WriteLine();
-                        Console.WriteLine();
-                        PacketAnswerVote voteresultpacket = PacketAnswerVote.FromBytes(data);
-                        logger.Info("Client answered vote");
-                        vote_counter += 1;
-                        ushort final = 0;
-                        if (voteresultpacket.GetResponse() == 1) satcount++;
-                        else if (voteresultpacket.GetResponse() == 0) unsatcount++;
-                        Console.WriteLine(vote_counter + " " + unsatcount + " " + satcount);
-                        Console.WriteLine(voteresultpacket.GetResponse());
-                        Console.WriteLine();
-                        Console.WriteLine();
-                        if (vote_counter == txpServer.conversations.Count)
-                        {
-                            final = PipServer.OrganizeData(txpServer, vote_counter, unsatcount, satcount);
-                            Guid tempguid = voteresultpacket.GetGuid();
-                            Header temphdr = new Header(PacketType.Vote_Broadcast_Vote_Result_S2C);
-                            PacketBroadcastVoteResult ResultS2Cpacket = new PacketBroadcastVoteResult(temphdr, tempguid, final);
-                            byte[] finaldata = ResultS2Cpacket.ToBytes();
-                            foreach (var conversationEntry in txpServer.conversations)
-                            {
-                                var conversation = conversationEntry.Value;
-                                txpServer.Send(finaldata, conversation);
-                            }
-                            vote_counter = 0;
-                            unsatcount = 0;
-                            satcount = 0;
-                            Console.WriteLine(vote_counter + " " + unsatcount + " " + satcount);
-                            logger.Info($"final packet result for guid {voteresultpacket.GetGuid()} is {final}");
-                            var ServerLogToWrite = new ServerVoteLog(voteresultpacket.GetGuid(), final);
-                            DateTime currentTime = DateTime.Now;
-
-                            using (StreamWriter writer = new StreamWriter(filePath, true))
-                            {
-                                writer.Write(currentTime + " " + ServerLogToWrite.GetGuid() + " ");
-                                writer.WriteLine(final);
-                            }
-                        }
-
-                    }
+                    OnPacketRecievedHandler(data, txpServer, clientState, ServerclientsList, ref ServerActiveQuestionList, filePath);
                 };
-
 
                 /*// Logs the receipt of a packet using Trace level, including the client's ID and the packet data as a hex string.
                 logger.Trace($"Received packet from CID {clientState.ConversationId} with data: {}");
@@ -141,7 +78,37 @@ namespace _33D03.Server
             // Puts the main thread to sleep indefinitely, preventing the program from exiting.
             Thread.Sleep(-1);
         }
+        //handles what happeens when packets are recieved
+        public static void OnPacketRecievedHandler(byte[] data, TxpServer txpServer, TxpClientConversation clientState, List<ServerListofClients> ServerclientsList, ref List<ServerVoteId> ServerActiveQuestionList, string filePath)
+        {
+            var receivedHeader = Header.FromBytes(data);
+
+            int connectedclients = txpServer.conversations.Count;
+            logger.Trace($"Received packet from CID {clientState.ConversationId} of type {receivedHeader.type}");
+            if (receivedHeader.type == PacketType.Hello_C2S)
+            {
+                PipServer.HelloRecieved(txpServer, clientState, ServerclientsList, data, clientState.ConversationId);
+                PipServer.SendInfo(txpServer, clientState, ServerclientsList, data, clientState.ConversationId);
+            }
+            else if (receivedHeader.type == PacketType.Client_request_info)
+            {
+                PipServer.SendInfo(txpServer, clientState, ServerclientsList, data, clientState.ConversationId);
+            }
+            else if (receivedHeader.type == PacketType.Vote_Request_Vote_C2S)
+            {
+                PipServer.SendInfo(txpServer, clientState, ServerclientsList, data, clientState.ConversationId);
+                PipServer.PipServerBroadcastQuestion(txpServer, data, ServerActiveQuestionList);
+
+            }
+            else if (receivedHeader.type == PacketType.Vote_Answer_Vote_C2S)
+            {
+
+                PipServer.handlingvoteresults(txpServer, ref ServerActiveQuestionList, data, filePath);
+            }
+        }
 
     }
 
 }
+
+

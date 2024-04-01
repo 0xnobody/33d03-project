@@ -49,8 +49,8 @@ namespace _33D03.Shared.Txp
         public uint magic;
         public uint checksum;
         public uint convId;
-        public uint seqNum;
         public uint pcktNum;
+        public uint seqNum;
         public ushort finish;
         public PacketType type;
 

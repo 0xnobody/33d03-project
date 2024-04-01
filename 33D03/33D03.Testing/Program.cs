@@ -1,4 +1,6 @@
 using Microsoft.Z3;
+using _33D03.Shared.AI;
+using Keras;
 
 var unSatExample = "(set-logic QF_LIA) (declare-const x Int) (declare-const y Int) (assert (= (- x y) (+ x (- y) 1))) (check-sat)";
 var satExample = "(set-logic QF_LIA) (declare-const x Int) (declare-const y Int) (assert (= (+ x (* 2 y)) 20)) (assert (= (- x y) 2)) (check-sat)";
@@ -24,5 +26,16 @@ void checkModel(string modelStr)
     }
 }
 
-checkModel(unSatExample);
-checkModel(satExample);
+void detectText(string imagePath)
+{    
+    var bytes = File.ReadAllBytes(imagePath);
+
+    (var text, var confidence) = OCR.Classify(bytes);
+
+    Console.WriteLine($"Text: {text} with confidence {confidence}");
+}
+
+detectText(@"C:\Users\adamn\Downloads\sample.png");
+
+//checkModel(unSatExample);
+//checkModel(satExample);

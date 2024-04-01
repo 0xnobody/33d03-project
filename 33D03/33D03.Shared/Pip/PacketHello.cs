@@ -1,4 +1,4 @@
-﻿using System; // Importing the System namespace which contains fundamental classes and base classes that define commonly-used value and reference data types, events and event handlers, interfaces, attributes, and processing exceptions.
+using System; // Importing the System namespace which contains fundamental classes and base classes that define commonly-used value and reference data types, events and event handlers, interfaces, attributes, and processing exceptions.
 using System.Collections.Generic; // Importing the namespace for generic collections.
 using System.Linq; // Importing the namespace for Language-Integrated Query (LINQ), which provides methods for querying and manipulating data.
 using System.Net;
@@ -11,12 +11,10 @@ namespace _33D03.Shared.Pip // Declaring a namespace for organizing related code
 {
     public enum Feature : ushort // Declaring a public enumeration named Feature, with underlying type ushort.
     {
-        SMTVerificationFeature = 0, // Defining an enumeration member named SMTVerificationFeature with value 0.
-        TestFeatrue1 = 1,
-        TestFeatrue2 = 2,
+        SimpleVerificationFeature = 0,
+        SMTVerificationFeature = 1, // Defining an enumeration member named SMTVerificationFeature with value 0.
+        OCRFeature = 2
     }
-
-
 
     [StructLayout(LayoutKind.Sequential, Pack = 1, Size = 20)] // Applying an attribute to control the physical layout of the data fields in this struct when it is passed to unmanaged code.
     public struct PacketHello // Declaring a public structure named PacketHello.
@@ -69,10 +67,11 @@ namespace _33D03.Shared.Pip // Declaring a namespace for organizing related code
             }
 
             var completedPacketBytes = new byte[Marshal.SizeOf(this) + numFeatures * 2]; // Creating a byte array to hold the serialized struct and features array.
-            Buffer.BlockCopy(ToBytes(), 0, completedPacketBytes, 0, Marshal.SizeOf(this)); // Copying the byte array representation of the struct into the completedPacketBytes array.
-            for (int i = 0; i < numFeatures; i++) // Looping over each feature.
+            Buffer.BlockCopy(ToBytes(), 0, completedPacketBytes, 0, Marshal.SizeOf(typeof(PacketHello))); // Assuming ToBytes() serializes the PacketHello struct
+            int startIndexOfFeatures = Marshal.SizeOf(typeof(PacketHello)); // Adjust if header needs specific handling
+            for (int i = 0; i < numFeatures; i++)
             {
-                Buffer.BlockCopy(BitConverter.GetBytes((ushort)features[i]), 0, completedPacketBytes, Marshal.SizeOf(header) + i * 2, 2); // Copying the byte array representation of each feature into the completedPacketBytes array.
+                Buffer.BlockCopy(BitConverter.GetBytes((ushort)features[i]), 0, completedPacketBytes, startIndexOfFeatures + i * 2, 2);
             }
 
             return completedPacketBytes; // Returning the completed byte array.

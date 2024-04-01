@@ -9,7 +9,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Keras.NET" Version="3.8.5" />
     <PackageReference Include="Microsoft.Z3" Version="4.12.2" />
+    <PackageReference Include="Tesseract" Version="5.2.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\33D03.Shared\33D03.Shared.csproj" />
   </ItemGroup>
 
 </Project>

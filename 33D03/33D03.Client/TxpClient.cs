@@ -114,6 +114,8 @@ namespace _33D03.Client
             segmentHandler.SendOrQueuePacket(data, serverEndPoint);
         }
 
+        
+
         private void ListenForData()
         {
             IPEndPoint remoteEndPoint = new IPEndPoint(IPAddress.Loopback, 0000);

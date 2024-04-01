@@ -71,6 +71,7 @@ namespace _33D03.Shared.Txp
                 }
             }
         }
+
         private void SendSYN()
         {
             Shared.Txp.Header header = new Shared.Txp.Header
