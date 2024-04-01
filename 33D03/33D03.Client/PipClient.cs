@@ -120,7 +120,6 @@ namespace _33D03.Client
             return smtBuilder.ToString();
         }
 
-
         //called for each VOTEINIT by client, sends randomly generated question
         public static void Client_request_info(TxpClient client){
             var header = new Header(PacketType.Client_request_info);
@@ -182,7 +181,7 @@ namespace _33D03.Client
             Guid voteGuid = voteID;
             uint result = SMTChecker(question);
             Guid newguid = Guid.NewGuid();
-            var Client_Answer_Packet = new PacketAnswerVote(header, voteGuid,newguid, (ushort)result);
+            var Client_Answer_Packet = new PacketAnswerVote(header, voteGuid, newguid, (ushort)result);
             if (Client_Answer_Packet.GetResponse() == 1)
             {
                 Console.WriteLine("Satisfied");
@@ -194,8 +193,8 @@ namespace _33D03.Client
             else Console.WriteLine("Syntax Error");
             byte[] answerinitbytes = Client_Answer_Packet.Serialize();
             client.Send(answerinitbytes);
-            Console.WriteLine("NEW GUID FOR THIS CLIENT RESPONSE IS "+ Client_Answer_Packet.GetNewGuid());
-            logger.Info("Client respond with " + Client_Answer_Packet.GetResponse() + "vote ID: " +voteGuid);
+            Console.WriteLine("NEW GUID FOR THIS CLIENT RESPONSE IS " + Client_Answer_Packet.GetNewGuid());
+            logger.Info("Client respond with " + Client_Answer_Packet.GetResponse() + "vote ID: " + voteGuid);
         }
 
         public static ushort SMTChecker(string question)
@@ -205,15 +204,31 @@ namespace _33D03.Client
             var solver = z3Ctx.MkSimpleSolver();
             solver.Assert(model);
 
-            if (solver.Check() == Status.SATISFIABLE)
+            //Cancellaltion token with timeout of 5 seconds
+            CancellationTokenSource cancellationTokenSource  = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+            CancellationToken cancellationToken = cancellationTokenSource.Token;
+
+            ushort result = 2; //default value for result, this is returned if the result is inconclusive
+
+            var task = Task.Run(() =>
             {
-                return 1;
-            }
-            else if (solver.Check() == Status.UNSATISFIABLE)
+                if (solver.Check() == Status.SATISFIABLE)
+                {
+                    result = 1; //1 if sat
+                }
+                else if (solver.Check() == Status.UNSATISFIABLE)
+                {
+                    result = 0; //0 is unsat
+                }
+            });
+
+            if (!task.Wait(TimeSpan.FromSeconds(5)))
             {
-                return 0;
+                cancellationToken.Cancel(); //if timeout is reached, cancelled calculations
+                result = 3; //3 if timeout reached
             }
-            else return 2;
+
+            return result;
         }
     }
 }

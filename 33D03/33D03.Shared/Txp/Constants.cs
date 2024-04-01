@@ -12,7 +12,7 @@ namespace _33D03.Shared.Txp
         public const int HEADER_SIZE = 24;
         public const int DATA_SIZE = PACKET_SIZE - HEADER_SIZE;
         public const int MAGIC = 0x33D03;
-        public const int ACK_TIMEOUT_MS = 100000;
+        public const int ACK_TIMEOUT_MS = 500;
         public const int SYN_TIMEOUT_MS = 5000;
         public const int SYN_MAX_ATTEMPTS = 3;
     }
