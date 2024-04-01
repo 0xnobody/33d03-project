@@ -11,12 +11,10 @@ namespace _33D03.Shared.Pip // Declaring a namespace for organizing related code
 {
     public enum Feature : ushort // Declaring a public enumeration named Feature, with underlying type ushort.
     {
+        SimpleVerificationFeature = 0,
         SMTVerificationFeature = 1, // Defining an enumeration member named SMTVerificationFeature with value 0.
-        TestFeatrue1 = 2,
-        TestFeatrue2 = 3,
+        OCRFeature = 2
     }
-
-
 
     [StructLayout(LayoutKind.Sequential, Pack = 1, Size = 20)] // Applying an attribute to control the physical layout of the data fields in this struct when it is passed to unmanaged code.
     public struct PacketHello // Declaring a public structure named PacketHello.

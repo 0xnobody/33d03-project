@@ -141,7 +141,7 @@ namespace _33D03.Client
         //gests hello bytes, see how server responds.
         public static byte [] GethelloBytes(){
             var header = new Header(PacketType.Hello_C2S);
-            Feature [] features = {Feature.SMTVerificationFeature, Feature.TestFeatrue1, Feature.TestFeatrue2};
+            Feature [] features = {Feature.SimpleVerificationFeature, Feature.SMTVerificationFeature, Feature.OCRFeature};
             var hellopacket = new PacketHello(header);
             hellopacket.numFeatures = features.Length;
             byte [] hellosendpacket = hellopacket.Serialize(features);
@@ -150,7 +150,7 @@ namespace _33D03.Client
 
         public static void SendHello(TxpClient client){
             var header = new Header(PacketType.Hello_C2S);
-            Feature [] features = {Feature.SMTVerificationFeature, Feature.TestFeatrue1, Feature.TestFeatrue2};
+            Feature [] features = {Feature.SimpleVerificationFeature, Feature.SMTVerificationFeature, Feature.OCRFeature };
             var hellopacket = new PacketHello(header);
             hellopacket.numFeatures = features.Length;
             byte [] hellosendpacket = hellopacket.Serialize(features);
