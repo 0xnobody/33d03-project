@@ -60,14 +60,17 @@ namespace _33D03.Server
                 }
             }
             int smtcount = 0;
-                foreach (var ServerListofClients in clientlist){
-                    for(int i = 0; i < ServerListofClients.numFeatures; i++){
-                        if(ServerListofClients.features[i] == Feature.SMTVerificationFeature && ServerListofClients.convoid != 0){
-                            smtcount ++;
-                            break;
-                        }
+            foreach (var ServerListofClients in clientlist)
+            {
+                for (int i = 0; i < ServerListofClients.numFeatures; i++)
+                {
+                    if (ServerListofClients.features[i] == Feature.SMTVerificationFeature && ServerListofClients.convoid != 0)
+                    {
+                        smtcount++;
+                        break;
                     }
                 }
+            }
             if (exist == false && smtcount != 0)
             {
                 var Vote_init_packet = new PacketBroadcastVote(headertoclient, voteGuid, questionlength);
@@ -79,7 +82,7 @@ namespace _33D03.Server
                     logger.Info("Client initiate vote requst with SMTLIB question " + question + "Generating Vote with ID " + voteGuid);
                 }
 
-                
+
 
                 ServerVoteId.AddVoteToList(ServerActiveQuestionList, voteGuid, question, 1, smtcount);
                 Console.WriteLine();
@@ -93,7 +96,8 @@ namespace _33D03.Server
                 Console.WriteLine();
                 Console.WriteLine();
             }
-            else if (smtcount == 0){
+            else if (smtcount == 0)
+            {
                 Console.WriteLine("Cannot have 0 clients");
             }
 
@@ -131,14 +135,18 @@ namespace _33D03.Server
                 }
 
                 int simplecount = 0;
-                foreach (var ServerListofClients in clientlist){
-                    for(int i = 0; i < ServerListofClients.numFeatures; i++){
-                        if(ServerListofClients.features[i] == Feature.SMTVerificationFeature && ServerListofClients.convoid != 0){
-                            {
-                                
+                foreach (var ServerListofClients in clientlist)
+                {
+                    for (int i = 0; i < ServerListofClients.numFeatures; i++)
+                    {
+                        if (ServerListofClients.features[i] == Feature.SimpleVerificationFeature && ServerListofClients.convoid != 0)
+                        {
+                            {   
+                                Console.WriteLine("added simple count");
+                                simplecount++;
+                                break;
                             }
-                            simplecount ++;
-                            break;
+
                         }
                     }
                 }
@@ -149,7 +157,7 @@ namespace _33D03.Server
                 Console.WriteLine();
                 foreach (ServerVoteId ServerVoteId in ServerActiveQuestionList)
                 {
-                    Console.WriteLine($"ServerVoteID{ServerVoteId.voteid}, Question{ServerVoteId.question}");
+                    Console.WriteLine($"ServerVoteID{ServerVoteId.voteid}, Question{ServerVoteId.question}, Question type {ServerVoteId.votetype} with clientcount {ServerVoteId.typeclientcount}");
                 }
                 Console.WriteLine();
                 Console.WriteLine();
@@ -229,7 +237,9 @@ namespace _33D03.Server
                 }
                 j++;
             }
+            Console.WriteLine(listvote[j].vote_counter + " " + listvote[j].unsat_counter + " " + listvote[j].sat_counter + "      " + listvote[j].typeclientcount);
             ServerVoteId temp = listvote[j];
+            Console.WriteLine("temp alloc successful");
             if (voteresultpacket.GetResponse() == 1) temp.sat_counter++;
             else if (voteresultpacket.GetResponse() == 0) temp.unsat_counter++;
             temp.vote_counter += 1;
