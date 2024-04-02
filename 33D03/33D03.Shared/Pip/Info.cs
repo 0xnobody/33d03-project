@@ -22,14 +22,17 @@ namespace _33D03.Shared.Pip
         }
     }
 
-    public struct ClientToServerRequestInfo{
+    public struct ClientToServerRequestInfo
+    {
         Header header;
 
-        public  ClientToServerRequestInfo(Header hdr){
+        public ClientToServerRequestInfo(Header hdr)
+        {
             header = hdr;
         }
 
-        public byte[] serialize(){
+        public byte[] serialize()
+        {
             return Serialization.StructureToByteArray(this);
         }
     }
@@ -59,8 +62,8 @@ namespace _33D03.Shared.Pip
         {
             List<byte> bytesList = new List<byte>();
             // Serialize Header
-            bytesList.AddRange(BitConverter.GetBytes(header.magic));
-            bytesList.AddRange(BitConverter.GetBytes(header.checksum));
+            //bytesList.AddRange(BitConverter.GetBytes(header.magic));
+            //bytesList.AddRange(BitConverter.GetBytes(header.checksum));
             bytesList.AddRange(BitConverter.GetBytes((uint)header.type));
             bytesList.AddRange(BitConverter.GetBytes((uint)clients.Count));
             // Serialize each ServerListofClients struct
@@ -84,8 +87,8 @@ namespace _33D03.Shared.Pip
             int currentIndex = 0;
             Header header = new Header
             {
-                magic = BitConverter.ToUInt32(data, currentIndex),
-                checksum = BitConverter.ToUInt32(data, currentIndex += sizeof(uint)),
+                //magic = BitConverter.ToUInt32(data, currentIndex),
+                //checksum = BitConverter.ToUInt32(data, currentIndex += sizeof(uint)),
                 type = (PacketType)BitConverter.ToUInt32(data, currentIndex += sizeof(uint))
             };
             currentIndex += sizeof(uint);

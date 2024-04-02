@@ -26,14 +26,14 @@ namespace _33D03.Shared.Pip // Declaring a namespace for organizing related code
     [StructLayout(LayoutKind.Sequential, Pack = 1)] // Applying an attribute to control the physical layout of the data fields in this struct when it is passed to unmanaged code.
     public struct Header // Declaring a public structure named Header.
     {
-        public uint magic; // Declaring a field of type uint.
-        public uint checksum; // Declaring a field of type uint.
+        //public uint magic; // Declaring a field of type uint.
+        //public uint checksum; // Declaring a field of type uint.
         public PacketType type; // Declaring a field of type PacketType.
 
         public Header(PacketType pcktType) // Defining a constructor for the struct.
         {
-            magic = Constants.MAGIC; // Assigning a constant value to the field magic.
-            checksum = 0; // Assigning the value 0 to the field checksum.
+            //magic = Constants.MAGIC; // Assigning a constant value to the field magic.
+            //checksum = 0; // Assigning the value 0 to the field checksum.
             type = pcktType; // Assigning the value of the parameter pcktType to the field type.
         }
 
