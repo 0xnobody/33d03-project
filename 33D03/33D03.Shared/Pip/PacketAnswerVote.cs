@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace _33D03.Shared.Pip
 {
-    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    [StructLayout(LayoutKind.Sequential, Pack = 1, Size = 36)]
     public struct PacketAnswerVote
     {
         Header header;

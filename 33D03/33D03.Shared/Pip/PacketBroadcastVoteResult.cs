@@ -7,7 +7,7 @@ using System.Threading.Tasks; // Importing the namespace for types that simplify
 
 namespace _33D03.Shared.Pip // Declaring a namespace for organizing related code and reducing naming conflicts.
 {
-    [StructLayout(LayoutKind.Sequential, Pack = 1)] // Applying an attribute to control the physical layout of the data fields in this struct when it is passed to unmanaged code.
+    [StructLayout(LayoutKind.Sequential, Pack = 1, Size = 20)] // Applying an attribute to control the physical layout of the data fields in this struct when it is passed to unmanaged code.
     public struct PacketBroadcastVoteResult // Declaring a public structure named PacketBroadcastVoteResult.
     {
         Header header; // Declaring a field of type Header.

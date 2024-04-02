@@ -143,7 +143,7 @@ namespace _33D03.Client
             var header = new Header(PacketType.Hello_C2S);
             Feature [] features = {Feature.SimpleVerificationFeature, Feature.SMTVerificationFeature, Feature.OCRFeature};
             var hellopacket = new PacketHello(header);
-            hellopacket.numFeatures = features.Length;
+            hellopacket.numFeatures = (ushort)features.Length;
             byte [] hellosendpacket = hellopacket.Serialize(features);
             return hellosendpacket;
         }
@@ -152,7 +152,7 @@ namespace _33D03.Client
             var header = new Header(PacketType.Hello_C2S);
             Feature [] features = {Feature.SimpleVerificationFeature, Feature.SMTVerificationFeature, Feature.OCRFeature };
             var hellopacket = new PacketHello(header);
-            hellopacket.numFeatures = features.Length;
+            hellopacket.numFeatures = (ushort)features.Length;
             byte [] hellosendpacket = hellopacket.Serialize(features);
             client.Send(hellosendpacket);
             logger.Info($"Client Sent hello to server with features {string.Join(", ",features)}");

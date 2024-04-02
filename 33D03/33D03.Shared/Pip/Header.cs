@@ -23,7 +23,7 @@ namespace _33D03.Shared.Pip // Declaring a namespace for organizing related code
         Client_request_info = 0x0007 //c2s request info list
     }
 
-    [StructLayout(LayoutKind.Sequential, Pack = 1)] // Applying an attribute to control the physical layout of the data fields in this struct when it is passed to unmanaged code.
+    [StructLayout(LayoutKind.Sequential, Pack = 1, Size = 2)] // Applying an attribute to control the physical layout of the data fields in this struct when it is passed to unmanaged code.
     public struct Header // Declaring a public structure named Header.
     {
         //public uint magic; // Declaring a field of type uint.

@@ -35,7 +35,7 @@ namespace _33D03.Shared.Pip // Declaring a namespace for organizing related code
 
 
 
-    [StructLayout(LayoutKind.Sequential, Pack = 1)] // Applying an attribute to control the physical layout of the data fields in this struct when it is passed to unmanaged code.
+    [StructLayout(LayoutKind.Sequential, Pack = 1, Size = 22)] // Applying an attribute to control the physical layout of the data fields in this struct when it is passed to unmanaged code.
     public struct PacketBroadcastVote // Declaring a public structure named PacketBroadcastVote.
     {
         Header header; // Declaring a field of type Header.

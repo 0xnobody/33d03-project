@@ -4,6 +4,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+using System.IO.Hashing;
 
 namespace _33D03.Shared.Txp
 {
@@ -54,6 +55,8 @@ namespace _33D03.Shared.Txp
         public ushort finish;
         public PacketType type;
 
+        private static NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
+
         public byte[] ToBytes()
         {
             return Serialization.StructureToByteArray(this);
@@ -80,13 +83,11 @@ namespace _33D03.Shared.Txp
                 throw new ArgumentException("Data must not be provided for a non-data packet");
             }
 
-            checksum = 0;
-
             var completedPacketBytes = new byte[Marshal.SizeOf(this) + contents.Length];
             Buffer.BlockCopy(ToBytes(), 0, completedPacketBytes, 0, Marshal.SizeOf(this));
             Buffer.BlockCopy(contents, 0, completedPacketBytes, Marshal.SizeOf(this), contents.Length);
 
-            var calculatedChecksum = Checksum.Calculate(completedPacketBytes);
+            var calculatedChecksum = CalculateChecksum(completedPacketBytes);
 
             // Set calculatedChecksum at offset 4 of the byte array, which corresponds to the checksum field in the struct
             // This saves us from copying the entire struct back into the byte array
@@ -118,13 +119,7 @@ namespace _33D03.Shared.Txp
                 return true;
             }
 
-            var rawFullPacketBytesChecksumZero = new byte[rawFullPacketBytes.Length];
-            Buffer.BlockCopy(rawFullPacketBytes, 0, rawFullPacketBytesChecksumZero, 0, rawFullPacketBytes.Length);
-
-            int checksumOffset = (int)Marshal.OffsetOf<Header>("checksum");
-            Buffer.BlockCopy(BitConverter.GetBytes(0ul), 0, rawFullPacketBytesChecksumZero, checksumOffset, sizeof(uint));
-
-            return Checksum.Calculate(rawFullPacketBytesChecksumZero) == checksum;
+            return CalculateChecksum(rawFullPacketBytes) == checksum;
         }
         public static Header FromBytes(byte[] data)
         {
@@ -142,6 +137,18 @@ namespace _33D03.Shared.Txp
             Buffer.BlockCopy(rawFullPacketBytes, Marshal.SizeOf(this), containedDataBytes, 0, containedDataBytes.Length);
 
             return containedDataBytes;
+        }
+
+        public uint CalculateChecksum(byte[] rawFullPacketBytes)
+        {
+            var hashBeginIndex = (int)Marshal.OffsetOf<Header>("convId");
+
+            var hashData = new byte[rawFullPacketBytes.Length - hashBeginIndex];
+            Buffer.BlockCopy(rawFullPacketBytes, hashBeginIndex, hashData, 0, hashData.Length);
+
+            logger.Trace($"Calculating checksum for bytes: {BitConverter.ToString(hashData)}");
+
+            return Crc32.HashToUInt32(hashData);
         }
     }
 }
