@@ -35,7 +35,7 @@ void detectText(string imagePath)
     Console.WriteLine($"Text: {text} with confidence {confidence}");
 }
 
-detectText(@"C:\Users\adamn\Downloads\sample.png");
+detectText(@"C:\Users\Administrator.ADMINTR-APQBBC9\Downloads\sample.jpg");
 
 //checkModel(unSatExample);
 //checkModel(satExample);

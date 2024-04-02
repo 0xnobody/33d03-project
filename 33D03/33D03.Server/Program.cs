@@ -110,8 +110,7 @@ namespace _33D03.Server
             }
             else if (receivedHeader.type == PacketType.Vote_Answer_Vote_C2S)
             {
-
-                PipServer.handlingvoteresults(txpServer, ref ServerActiveQuestionList, data, filePath);
+                PipServer.HandleVoteResultReceived(txpServer, ref ServerActiveQuestionList, ServerclientsList, data, filePath);
             }
         }
 
