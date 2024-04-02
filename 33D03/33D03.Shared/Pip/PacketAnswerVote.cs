@@ -12,21 +12,16 @@ namespace _33D03.Shared.Pip
     {
         Header header;
         Guid voteId;
-        Guid newguid;
         ushort response;
 
-        public PacketAnswerVote(Header constructheader, Guid constructvoteGuid, Guid NewGuid, ushort constructResponse)       //constructor
+        public PacketAnswerVote(Header constructheader, Guid constructvoteGuid, ushort constructResponse)       //constructor
         {
             header = constructheader;
             voteId = constructvoteGuid;
-            newguid = NewGuid;
             response = constructResponse;
         }
 
 
-        public Guid GetNewGuid(){
-            return newguid;
-        }
         public Header HeaderInfo
         {
             get { return header; }

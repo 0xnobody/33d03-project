@@ -105,12 +105,16 @@ namespace _33D03.Server
             else if (receivedHeader.type == PacketType.Vote_Request_Vote_C2S)
             {
                 PipServer.SendInfo(txpServer, clientState, ServerclientsList, data, clientState.ConversationId);
-                PipServer.PipServerBroadcastQuestion(txpServer, data, ServerActiveQuestionList);
-
+                PipServer.PipServerBroadcastQuestion(txpServer, data, ServerActiveQuestionList,ServerclientsList);
+            }
+            else if (receivedHeader.type == PacketType.Vote_Request_Simple_C2S){
+                PipServer.PipServerBroadcastSimpleQuestion(txpServer, data, ServerActiveQuestionList,ServerclientsList);
             }
             else if (receivedHeader.type == PacketType.Vote_Answer_Vote_C2S)
             {
-
+                PipServer.handlingvoteresults(txpServer, ref ServerActiveQuestionList, data, filePath);
+            }
+            else if (receivedHeader.type == PacketType.Vote_answer_Simple_C2S){
                 PipServer.handlingvoteresults(txpServer, ref ServerActiveQuestionList, data, filePath);
             }
         }

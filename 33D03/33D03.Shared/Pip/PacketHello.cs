@@ -13,7 +13,8 @@ namespace _33D03.Shared.Pip // Declaring a namespace for organizing related code
     {
         SimpleVerificationFeature = 0,
         SMTVerificationFeature = 1, // Defining an enumeration member named SMTVerificationFeature with value 0.
-        OCRFeature = 2
+        OCRFeature = 2,
+        Unavail = 9
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1, Size = 8)] // Applying an attribute to control the physical layout of the data fields in this struct when it is passed to unmanaged code.
