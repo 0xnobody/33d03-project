@@ -119,7 +119,7 @@ namespace _33D03.Client
             smtBuilder.Append("(check-sat)");
             return smtBuilder.ToString();
         }
-        //Generates equations compatible with eval() function
+
         static string GenerateEvalString()
         {
             stringBuilder evalString = new StringBuilder();
@@ -204,27 +204,48 @@ namespace _33D03.Client
 
         public static void VoteInit(TxpClient client)
         {
-            var question = GenerateSMTLIBString();
-            var questionlength = (uint)question.Length;
-            var header = new Header(PacketType.Vote_Request_Vote_C2S);
-            Guid voteGuid = Guid.NewGuid();
-            var Vote_init_packet = new PacketRequestVote(header, voteGuid, questionlength);
-            var voteinitbytes = Vote_init_packet.Serialize(question);
-            client.Send(voteinitbytes);
-            Console.WriteLine();
-            Console.WriteLine();
-            Console.WriteLine();
-            logger.Info("Client initiate vote requst with SMTLIB question" + question);
-            Console.WriteLine();
-            Console.WriteLine();
-            Console.WriteLine();
+            int type = random.Next(2); 
+            if (type = 0)
+            {
+                var SMTquestion = GenerateSMTLIBString();
+                var SMTquestionlength = (uint)SMTquestion.Length;
+                var header = new Header(PacketType.Vote_Request_Vote_C2S); //smt format eqns
+                Guid voteGuid = Guid.NewGuid();
+                var Vote_init_packet = new PacketRequestVote(header, voteGuid, SMTquestionlength);
+                var SMTVoteinitbytes = Vote_init_packet.Serialize(SMTquestion);
+                client.Send(SMTVoteinitbytes);
+                Console.WriteLine();
+                Console.WriteLine();
+                Console.WriteLine();
+                logger.Info("Client initiate vote request with SMTLIB format question" + SMTquestion);
+                Console.WriteLine();
+                Console.WriteLine();
+                Console.WriteLine();
+            }
+            else if (type = 1)
+            {
+                var Evalquestion = GenerateEvalString();
+                var Evalquestionlength = (uint)Evalquestion.Length;
+                var header = new Header(PacketType.Vote_Request_Vote_Eval_C2S); //string format eqns
+                Guid voteGuid = Guid.NewGuid();
+                var Vote_init_packet = new PacketRequestVote(header, voteGuid, Evalquestionlength);
+                var EvalVoteinitbytes = Vote_init_packet.Serialize(Evalquestion);
+                client.Send(EvalVoteinitbytes);
+                Console.WriteLine();
+                Console.WriteLine();
+                Console.WriteLine();
+                logger.Info("Client initiate vote request with Eval format question" + Evalquestion);
+                Console.WriteLine();
+                Console.WriteLine();
+                Console.WriteLine();
+            }
         }
 
         public static void ClientAnswerVote(TxpClient client, string question, Guid voteID)
         {
             var header = new Header(PacketType.Vote_Answer_Vote_C2S);
             Guid voteGuid = voteID;
-            uint result = SMTChecker(question);
+            uint result = DetermineType(question);
             Guid newguid = Guid.NewGuid();
             var Client_Answer_Packet = new PacketAnswerVote(header, voteGuid,newguid, (ushort)result);
             if (Client_Answer_Packet.GetResponse() == 1)
@@ -240,6 +261,31 @@ namespace _33D03.Client
             client.Send(answerinitbytes);
             Console.WriteLine("NEW GUID FOR THIS CLIENT RESPONSE IS "+ Client_Answer_Packet.GetNewGuid());
             logger.Info("Client respond with " + Client_Answer_Packet.GetResponse() + "vote ID: " +voteGuid);
+        }
+
+        public static ushort DetermineType(string question)
+        {
+            if (SMTFormat(question))
+            {
+                return SMTChecker(question);
+            }
+            else if (EvalFormat(question))
+            {
+                return EvalChecker(question);
+            }
+            else { return 2; }
+        }
+
+        public static bool SMTFormat(string question)
+        {
+            //checks if eqn starts with SMT logic
+            return equation.TrimStart().StartsWith("(set-logic", StringComparison.OrdinalIgnoreCase);
+        }
+
+        public static bool EvalFormat(string question)
+        {
+            //checks for '=' sign
+            return equation.Contians("=");
         }
 
         public static ushort SMTChecker(string question)
@@ -259,5 +305,35 @@ namespace _33D03.Client
             }
             else return 2;
         }
+
+        public static ushort EvalChecker(string question)
+        {
+            try
+            {
+                //Split the equation by the '=' sign
+                string[] parts = question.Split('=');
+
+                if (parts.Length != 2)
+                {
+                    throw new ArgumentException("Invalid equation Format");
+                }
+
+                string leftSide = parts[0].Trim();
+                string rightSide = parts[1].Trim();
+
+                //Evalute both side and compare
+                DataTable dataTable = new DataTable();
+                object leftResult = dataTable.Compute(leftSide, "");
+                object rightResult = dataTable.Compute(rightSide, "");
+                //supposing we are working with integers only??
+                return Convert.ToInt32(leftResult) == Convert.ToInt32(rightResult);
+            }
+            catch
+            {
+                return false;
+            }
+           
+        }
+
     }
 }
