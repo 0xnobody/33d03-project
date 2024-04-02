@@ -11,10 +11,14 @@ namespace _33D03.Shared.Pip // Declaring a namespace for organizing related code
     {
         Hello_C2S = 0x0000, // Defining an enumeration member named Hello_C2S with value 0x0000.
         Hello_S2C = 0x0001, // Defining an enumeration member named Hello_S2C with value 0x0001.
-        Vote_Request_Vote_C2S = 0x0002, // Defining an enumeration member named Vote_Request_Vote_C2S with value 0x0002.
-        Vote_Broadcast_Vote_S2C = 0x0003, // Defining an enumeration member named Vote_Broadcast_Vote_S2C with value 0x0003.
-        Vote_Answer_Vote_C2S = 0x0004, // Defining an enumeration member named Vote_Answer_Vote_C2S with value 0x0004.
-        Vote_Broadcast_Vote_Result_S2C = 0x0005, // Defining an enumeration member named Vote_Broadcast_Vote_Result_S2C with value 0x0005.
+        Vote_Request_Simple_C2S = 0x0004,
+        Vote_Broadcast_Simple_S2C = 0x0005,
+        Vote_answer_Simple_C2S = 0x0006,
+        Vote_Broadcast_Vote_Result_Simple_S2C = 0x0007,
+        Vote_Request_Vote_C2S = 0x0008, // Defining an enumeration member named Vote_Request_Vote_C2S with value 0x0002.
+        Vote_Broadcast_Vote_S2C = 0x0009, // Defining an enumeration member named Vote_Broadcast_Vote_S2C with value 0x0003.
+        Vote_Answer_Vote_C2S = 0x00010, // Defining an enumeration member named Vote_Answer_Vote_C2S with value 0x0004.
+        Vote_Broadcast_Vote_Result_S2C = 0x00011, // Defining an enumeration member named Vote_Broadcast_Vote_Result_S2C with value 0x0005.
         Client_Info = 0x0006, //s2c client info list
         Client_request_info = 0x0007 //c2s request info list
     }

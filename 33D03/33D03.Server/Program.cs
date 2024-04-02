@@ -10,6 +10,8 @@ using _33D03.Shared;
 using _33D03.Shared.Pip;
 using System.Data.SqlTypes;
 using System.Formats.Asn1;
+using Tensorflow.Keras.Layers;
+using Microsoft.ML;
 
 namespace _33D03.Server
 {
@@ -37,6 +39,8 @@ namespace _33D03.Server
                 List<ServerListofClients> ServerclientsList = new List<ServerListofClients>();
                 List<ServerVoteId> ServerActiveQuestionList = new List<ServerVoteId>();
 
+                Feature[] ServerFeatures = { Feature.SMTVerificationFeature, Feature.SimpleVerificationFeature, Feature.OCRFeature };
+                ServerclientsList.Add(new ServerListofClients(0, 3, ServerFeatures));
                 // Subscribe to the OnPacketReceived event with an anonymous method to handle incoming packets.
 
                 string filePath = @"C:\PipList\server_output.txt";
@@ -44,6 +48,10 @@ namespace _33D03.Server
                 txpServer.OnPacketReceived += (clientState, data) =>
                 {
                     OnPacketRecievedHandler(data, txpServer, clientState, ServerclientsList, ref ServerActiveQuestionList, filePath);
+                };
+                txpServer.OnClientDisconnected += (conversation) =>
+                {
+                    PipServer.ClientDisconnected(conversation, ServerclientsList, txpServer);
                 };
 
                 /*// Logs the receipt of a packet using Trace level, including the client's ID and the packet data as a hex string.

@@ -17,28 +17,36 @@ namespace _33D03.Client
         private static NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
 
 
-        public static void ProcessInput(object objclient){
+        public static void ProcessInput(object objclient)
+        {
             TxpClient client = objclient as TxpClient;
             string input = null;
-            while(input != "exit"){
+            while (input != "exit")
+            {
                 input = Console.ReadLine();
-                if (input == "vote"){
+                if (input == "vote")
+                {
                     PipClient.VoteInit(client);
                 }
-                else if (input == "info"){
+                else if (input == "info")
+                {
                     PipClient.Client_request_info(client);
                 }
-                else if (input == "help"){
+                else if (input == "help")
+                {
                     helpPrint();
                 }
-                else if (input == "hello"){
+                else if (input == "hello")
+                {
                     PipClient.SendHello(client);
                 }
-                else if (input == "flood"){
+                else if (input == "flood")
+                {
 
-                    byte [] Getbytes = PipClient.GethelloBytes();
-                    byte [] Getinfobytes = PipClient.GetinfoBytes();
-                    while (1 == 1){
+                    byte[] Getbytes = PipClient.GethelloBytes();
+                    byte[] Getinfobytes = PipClient.GetinfoBytes();
+                    while (1 == 1)
+                    {
                         client.Send(Getbytes);
                         client.Send(Getinfobytes);
                     }
@@ -64,17 +72,17 @@ namespace _33D03.Client
                     OnPacketRecievedHandler(client, data);
                 };
 
-                Thread StartThread = new Thread (new ThreadStart(client.Start));
+                Thread StartThread = new Thread(new ThreadStart(client.Start));
                 StartThread.Start();
 
-                Thread inputThread = new Thread (new ParameterizedThreadStart(ProcessInput));
+                Thread inputThread = new Thread(new ParameterizedThreadStart(ProcessInput));
                 inputThread.Start(client);
 
-                
+
 
                 PipClient.SendHello(client);
 
-                helpPrint();       
+                helpPrint();
 
 
 
@@ -89,12 +97,13 @@ namespace _33D03.Client
 
 
 
-        private static void helpPrint(){
-                Console.WriteLine("Inputs:");
-                Console.WriteLine("vote -- initiate vote");
-                Console.WriteLine("info -- request Client list from server");
-                Console.WriteLine("exit -- exits");       
-                Console.WriteLine("flood -- floods server, but client uses more resources, even when ignoring incopming packets...");
+        private static void helpPrint()
+        {
+            Console.WriteLine("Inputs:");
+            Console.WriteLine("vote -- initiate vote");
+            Console.WriteLine("info -- request Client list from server");
+            Console.WriteLine("exit -- exits");
+            Console.WriteLine("flood -- floods server, but client uses more resources, even when ignoring incopming packets...");
         }
 
 
@@ -123,7 +132,7 @@ namespace _33D03.Client
         private static void OnVoteBroadCastVoteS2C(string filePath, byte[] data)
         {
             logger.Trace($"Received Reuslt packet from server with dat: {PacketBroadcastVoteResult.FromBytes(data)}");
-            (PacketBroadcastVoteResult voteResult, string resultStats )= PacketBroadcastVoteResult.Deserialize(data);
+            (PacketBroadcastVoteResult voteResult, string resultStats) = PacketBroadcastVoteResult.Deserialize(data);
             Console.WriteLine();
             Console.WriteLine();
             Console.WriteLine();
@@ -166,7 +175,11 @@ namespace _33D03.Client
                     (Header hdr, List<ServerListofClients> infolist) = PacketInfo.DeserializeListOfServerListofClients(data);
                     foreach (var ServerListofClients in infolist)
                     {
-                        Console.WriteLine($"Recieved, ClientID: {ServerListofClients.convoid}, numfeatures {ServerListofClients.numFeatures}, Features:{String.Join(", ", ServerListofClients.features)}");
+                        if (ServerListofClients.convoid != 0)
+                        {
+                            Console.WriteLine($"Recieved, ClientID: {ServerListofClients.convoid}, numfeatures {ServerListofClients.numFeatures}, Features:{String.Join(", ", ServerListofClients.features)}");
+                        }
+                        else { Console.WriteLine($"Recieved, SERVER BROADCASST, Server has numfeatures: {ServerListofClients.numFeatures}, Features:{String.Join(", ", ServerListofClients.features)}"); }
                     }
                     break;
 
