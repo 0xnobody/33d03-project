@@ -7,6 +7,7 @@ using _33D03.Shared.Pip;
 using NLog.LayoutRenderers;
 using Microsoft.Z3;
 using System.Runtime.Serialization;
+using System.Text.RegularExpressions;
 using NLog;
 using OneOf.Types;
 using System.Data;
@@ -167,7 +168,7 @@ namespace _33D03.Client
             else
             {
                 double result = random.Next(-255, 255);
-                evalString.Append($"{expression} = {expression2}");
+                evalString.Append($"{expression} > {expression2}");
             }
             return evalString.ToString();
         }
@@ -234,7 +235,7 @@ namespace _33D03.Client
             return hellosendpacket;
         }
 
-        public static void SendHello(TxpClient client, Feature [] features)
+        public static void SendHello(TxpClient client, Feature[] features)
         {
             var header = new Header(PacketType.Hello_C2S);
             var hellopacket = new PacketHello(header);
@@ -306,29 +307,45 @@ namespace _33D03.Client
         {
             try
             {
-                // Split the equation by the '=' sign
-                string[] parts = question.Split('=');
+                // Regular expression to identify comparison operators and split the expression accordingly
+                Regex regex = new Regex(@"(==|<=|>=|<|>|=)");
+                Match match = regex.Match(question);
 
-                if (parts.Length != 2)
+                if (!match.Success || match.Groups.Count < 1)
                 {
-                    throw new ArgumentException("Invalid equation format");
+                    throw new ArgumentException("Invalid or missing comparison operator");
                 }
 
+                string operatorFound = match.Groups[0].Value;
+                string[] parts = regex.Split(question, 2);
+
                 string leftSide = parts[0].Trim();
-                string rightSide = parts[1].Trim();
+                string rightSide = parts[2].Trim(); // parts[1] will be the operator, which we already have
 
-                // Evaluate both sides and compare
+                // Evaluate both sides
                 DataTable dataTable = new DataTable();
-                object leftResult = dataTable.Compute(leftSide, "");
-                object rightResult = dataTable.Compute(rightSide, "");
+                double leftResult = Convert.ToDouble(dataTable.Compute(leftSide, ""));
+                double rightResult = Convert.ToDouble(dataTable.Compute(rightSide, ""));
+                Console.WriteLine(leftResult);
+                Console.WriteLine(rightResult);
+                // Perform the comparison
+                bool comparisonResult = operatorFound switch
+                {
+                    "<" => leftResult < rightResult,
+                    ">" => leftResult > rightResult,
+                    "<=" => leftResult <= rightResult,
+                    ">=" => leftResult >= rightResult,
+                    "==" => (int)leftResult == (int)rightResult,
+                    "=" => (int)leftResult == (int)rightResult,
+                    _ => throw new ArgumentException("no comparator found")
+                };
+                
 
-                // Assuming we are working with integers only
-                bool isEqual = Convert.ToInt32(leftResult) == Convert.ToInt32(rightResult);
-                return (ushort)(isEqual ? 1 : 0);
+                return (ushort)(comparisonResult ? 1 : 0);
             }
             catch
             {
-                return 0;
+                throw new ArgumentException("something went wrong");
             }
         }
 
