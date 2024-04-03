@@ -17,104 +17,41 @@ namespace _33D03.Client
 
         static Random random = new Random();
 
-
-        //
-        //  dont use right now, crashes
-        //
-        static string GenerateSMTLIBStringMoreOptions()
-        {
-            StringBuilder smtBuilder = new StringBuilder();
-            string[] diffLogics = new string[] { "QF_LIA", "QF_BV" };           //randomises the logic used between linear integer arithmetic or bit vectors
-            string selectedLogic = diffLogics[random.Next(diffLogics.Length)];
-
-            smtBuilder.Append($"(set-logic {selectedLogic})\n");
-
-            //declares constants based off selected logic
-            if (selectedLogic == "QF_LIA")
-            {
-                smtBuilder.Append("(declare-const x Int) (declare-const y Int)\n");
-            }
-            else if (selectedLogic == "QF_BV")
-            {
-                smtBuilder.Append("(declare-const a (_ BitVec 32)) (declare-const b (_ BitVec 32))\n");
-            }
-
-            //randomises type of SMT problem created by the generator
-            //should produce mix of SAT and UNSAT
-            int diffProblems = random.Next(1,4);
-            if (diffProblems == 0)
-            {
-                int randVal = random.Next(-255, 255);
-                if (selectedLogic == "QF_LIA")  //these comparisons will likely be SAT
-                {
-                    smtBuilder.AppendFormat("(assert (> (+ x y) {0}))\n", randVal);
-                }
-                else if (selectedLogic == "QF_BV")
-                {
-                    smtBuilder.AppendFormat("(assert (bvslt (bvadd a b) #x{0:X8}))\n", randVal);
-                }
-            }
-            else if (diffProblems == 1)         //these logical expressions should also likely be SAT
-            {
-                if (selectedLogic == "QF_LIA")
-                {
-                    smtBuilder.AppendLine("(assert (or (> x 1) (< y 15)))");
-                }
-                else
-                {
-                    smtBuilder.AppendLine("(assert (bvor (bvslt a #x0000000A) (bvsgt b #x000000AA)))");
-                }
-            }
-            else if (diffProblems == 2)         //these conditions should always be UNSAT as there is no constant values that should satisfy
-            {
-                if (selectedLogic == "QF_LIA")
-                {
-                    smtBuilder.AppendLine("(assert (and (> x 70) (< x 40)))");
-                }
-                else
-                {
-                    smtBuilder.AppendLine("(assert (and (bvslt a #x00000044) (bvsgt a #x00000067)))");
-                }
-            }
-            else if (diffProblems == 3)         //more conditions that will likely be SAT that include some multiplication and addition
-            {
-                if (selectedLogic == "QF_LIA")
-                {
-                    smtBuilder.AppendLine("(assert (= (+ x (* 2 y)) 50))");
-                }
-                else
-                {
-                    smtBuilder.AppendLine("(assert (bvsle (bvadd a b) #xF000000F))");
-                }
-            }
-
-            // Finish with checking satisfiability
-            smtBuilder.Append("(check-sat)");
-            return smtBuilder.ToString();
-        }
-
-
         // Generates a random SMT-LIB string representing a SAT or UNSAT problem
         static string GenerateSMTLIBString()
         {
             StringBuilder smtBuilder = new StringBuilder();
-            // Start with setting the logic
-            smtBuilder.Append("(set-logic QF_LIA) ");
-            // Declare two integer constants
-            smtBuilder.Append("(declare-const x Int) (declare-const y Int) ");
-            // Decide randomly to generate a SAT or UNSAT expression
-            bool generateSAT = random.Next(0, 2) == 0;
-            if (generateSAT)
+            string[] diffLogics = new string[] { "QF_LIA" };           //chooses linear arithmetic as logic fragment (could add more such as QF_BV)
+            string selectedLogic = diffLogics[random.Next(diffLogics.Length)];
+
+            smtBuilder.AppendFormat("(set-logic {0})\n", selectedLogic);
+            smtBuilder.Append("(declare-const x Int) (declare-const y Int) (declare-const z Int)\n");   //declaring 3 constants to be used in the expressions
+
+            List<string> diffExpressions = new List<string>         //creates a list of 10 different expressions to be used
             {
-                // Generate a likely SAT example
-                int a = random.Next(1, 10);
-                smtBuilder.AppendFormat("(assert (= x (+ y {0}))) ", a);
-            }
-            else
+                $"(= (+ x y) z)",                               //x + y = z
+                $"(> x (* y 2))",                               //x > 2y
+                $"(< (- x y) 5)",                               //x - y > 5
+                $"(>= z (+ x 3))",                              //x + 3 <= z
+                $"(distinct x y z)",                            //all 3 variables are different              
+                $"(and (> x -5) (< y -10) (>= z (* x 2)))",     //all 3 conditions must be true due to and operator, x > -5, y > -10, z >2x
+                $"(or (<= x y) (> z 10))",                      //either x <= y or z > 10 have to be true
+                $"(not (= z (* x y)))",                         //will only be true if the condition is false, x * y = z
+                $"(= (* x 3) (+ y (* z 2)))",                   //3x = 2z + y
+                $"(<= (+ x y z) 100)"                           //all 3 variables must be less than or equal to 100
+            };
+
+            int randVal = random.Next(1, 11);   //picks random val between 1 and 10
+            int numExpressions = randVal;       //uses the value to pick an amount of the expressions to be used in the smt problem for more variety
+
+            var shuffled = diffExpressions.OrderBy(a => random.Next());     //shuffles up order of expressions for more variety
+            diffExpressions = shuffled.ToList();
+
+            for (int i = 0; i < numExpressions; i++)
             {
-                // Generate a likely UNSAT example
-                smtBuilder.Append("(assert (= (- x y) (+ x (- y) 1))) ");
+                smtBuilder.AppendFormat("(assert {0})\n", diffExpressions[i]);  //puts all of the expressions together to create final problem
             }
+
             // Finish with checking satisfiability
             smtBuilder.Append("(check-sat)");
             return smtBuilder.ToString();
@@ -122,40 +59,44 @@ namespace _33D03.Client
 
 
         //called for each VOTEINIT by client, sends randomly generated question
-        public static void Client_request_info(TxpClient client){
+        public static void Client_request_info(TxpClient client)
+        {
             var header = new Header(PacketType.Client_request_info);
             var requestpacket = new ClientToServerRequestInfo(header);
-            byte [] sendinforequestbytestream = requestpacket.serialize();
+            byte[] sendinforequestbytestream = requestpacket.serialize();
             client.Send(sendinforequestbytestream);
             logger.Info($"Client Sent info request to server");
         }
 
         //gets info request bytes, reduces calculation when needed for flooding
-        public static byte [] GetinfoBytes(){
+        public static byte[] GetinfoBytes()
+        {
             var header = new Header(PacketType.Client_request_info);
             var requestpacket = new ClientToServerRequestInfo(header);
-            byte [] sendinforequestbytestream = requestpacket.serialize();
+            byte[] sendinforequestbytestream = requestpacket.serialize();
             return sendinforequestbytestream;
         }
 
         //gests hello bytes, see how server responds.
-        public static byte [] GethelloBytes(){
+        public static byte[] GethelloBytes()
+        {
             var header = new Header(PacketType.Hello_C2S);
-            Feature [] features = {Feature.SimpleVerificationFeature, Feature.SMTVerificationFeature, Feature.OCRFeature};
+            Feature[] features = { Feature.SimpleVerificationFeature, Feature.SMTVerificationFeature, Feature.OCRFeature };
             var hellopacket = new PacketHello(header);
             hellopacket.numFeatures = features.Length;
-            byte [] hellosendpacket = hellopacket.Serialize(features);
+            byte[] hellosendpacket = hellopacket.Serialize(features);
             return hellosendpacket;
         }
 
-        public static void SendHello(TxpClient client){
+        public static void SendHello(TxpClient client)
+        {
             var header = new Header(PacketType.Hello_C2S);
-            Feature [] features = {Feature.SimpleVerificationFeature, Feature.SMTVerificationFeature, Feature.OCRFeature };
+            Feature[] features = { Feature.SimpleVerificationFeature, Feature.SMTVerificationFeature, Feature.OCRFeature };
             var hellopacket = new PacketHello(header);
             hellopacket.numFeatures = features.Length;
-            byte [] hellosendpacket = hellopacket.Serialize(features);
+            byte[] hellosendpacket = hellopacket.Serialize(features);
             client.Send(hellosendpacket);
-            logger.Info($"Client Sent hello to server with features {string.Join(", ",features)}");
+            logger.Info($"Client Sent hello to server with features {string.Join(", ", features)}");
         }
 
         public static void VoteInit(TxpClient client)
@@ -182,7 +123,7 @@ namespace _33D03.Client
             Guid voteGuid = voteID;
             uint result = SMTChecker(question);
             Guid newguid = Guid.NewGuid();
-            var Client_Answer_Packet = new PacketAnswerVote(header, voteGuid,newguid, (ushort)result);
+            var Client_Answer_Packet = new PacketAnswerVote(header, voteGuid, newguid, (ushort)result);
             if (Client_Answer_Packet.GetResponse() == 1)
             {
                 Console.WriteLine("Satisfied");
@@ -194,8 +135,8 @@ namespace _33D03.Client
             else Console.WriteLine("Syntax Error");
             byte[] answerinitbytes = Client_Answer_Packet.Serialize();
             client.Send(answerinitbytes);
-            Console.WriteLine("NEW GUID FOR THIS CLIENT RESPONSE IS "+ Client_Answer_Packet.GetNewGuid());
-            logger.Info("Client respond with " + Client_Answer_Packet.GetResponse() + "vote ID: " +voteGuid);
+            Console.WriteLine("NEW GUID FOR THIS CLIENT RESPONSE IS " + Client_Answer_Packet.GetNewGuid());
+            logger.Info("Client respond with " + Client_Answer_Packet.GetResponse() + "vote ID: " + voteGuid);
         }
 
         public static ushort SMTChecker(string question)
