@@ -8,8 +8,7 @@ namespace _33D03.Shared.Pip
 {
     public static class Constants
     {
-        public static uint MAGIC = 0x1337;
-        public static ushort VERSION = 1;
-        public static readonly Feature[] FEATURES = { Feature.SMTVerificationFeature };
+        public static uint VERSION = 6;
+        public static int VOTE_TIMEOUT = 5000;
     }
 }

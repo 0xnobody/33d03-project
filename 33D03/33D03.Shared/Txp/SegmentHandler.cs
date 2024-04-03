@@ -79,7 +79,7 @@ namespace _33D03.Shared.Txp
         /// <param name="endPoint"></param>
         private void sendSegment(uint seqNum, uint pcktNum, IPEndPoint endPoint)
         {
-            logger.Info($"Sending segment {seqNum}:{pcktNum}");
+            logger.Info($"Sending segment {seqNum}:{pcktNum} with data {BitConverter.ToString(OutgoingSegments[seqNum]).Replace("-", "")}");
 
             udpClient.Send(OutgoingSegments[seqNum], endPoint);
 
@@ -404,6 +404,11 @@ namespace _33D03.Shared.Txp
 
             byte[] ackPacket = header.ToBytes();
             udpClient.Send(ackPacket, ackPacket.Length, remoteEndPoint);
+        }
+
+        public void AssignCID(uint cid)
+        {
+            conversationId = cid;
         }
     }
 }

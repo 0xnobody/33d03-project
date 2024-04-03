@@ -9,161 +9,110 @@ using System.ComponentModel;
 using System.Runtime.Versioning;
 using NLog.LayoutRenderers;
 using Microsoft.VisualBasic;
-
 namespace _33D03.Server
 {
-
-    public struct ServerVoteLog
-    {
-        Guid servervoteguid;
-        ushort result;
-
-        public ServerVoteLog(Guid inputGuid, ushort rest)
-        {
-            servervoteguid = inputGuid;
-            result = rest;
-        }
-        public Guid GetGuid()
-        {
-            return servervoteguid;
-        }
-        public ushort GetResult()
-        {
-            return result;
-        }
-    }
-
-
     public static class PipServer
     {
 
         private static NLog.Logger logger = NLog.LogManager.GetCurrentClassLogger();
 
-        internal static void PipServerBroadcastQuestion(TxpServer server, byte[] data, List<ServerVoteId> ServerActiveQuestionList, List<ServerListofClients> clientlist)
+        internal static void PipServerBroadcastQuestion(TxpServer server, byte[] data, List<ServerVoteId> ServerActiveQuestionList, List<ServerListofClients> clientlist, string filePath)
         {
-            foreach (ServerVoteId ServerVoteId in ServerActiveQuestionList)
-            {
-                Console.WriteLine($"ServerVoteID{ServerVoteId.voteid}, Question{ServerVoteId.question}");
-            }
             (PacketRequestVote recievedpacktestvote, string question) = PacketRequestVote.Deserialize(data);
-            var sendQuestion = question;
+
             var questionlength = (uint)question.Length;
             var headertoclient = new Header(PacketType.Vote_Broadcast_Vote_S2C);
             Guid voteGuid = recievedpacktestvote.Getguid();
-            bool exist = false;
-            foreach (ServerVoteId ServerVoteId in ServerActiveQuestionList)
+
+            logger.Info("Client initiate vote requst with SMTLIB question " + question + "Generating Vote with ID " + voteGuid);
+
+            var voteAlreadyExists = ServerActiveQuestionList.Exists(v => v.voteid == voteGuid);
+
+            var numClientsWithSMT = clientlist.Count(c => c.features.Contains(Feature.SMTVerificationFeature));
+
+            if (numClientsWithSMT == 0)
             {
-                Console.WriteLine("FALSE REPORTED");
-                if (ServerVoteId.voteid == voteGuid)
-                {
-                    exist = true;
-                }
+                logger.Warn("Client requested SMTLIB vote, but no clients support SMTLIB. Ignoring.");
+                return;
             }
-            int smtcount = 0;
-            foreach (var ServerListofClients in clientlist)
-            {
-                for (int i = 0; i < ServerListofClients.numFeatures; i++)
-                {
-                    if (ServerListofClients.features[i] == Feature.SMTVerificationFeature && ServerListofClients.convoid != 0)
-                    {
-                        smtcount++;
-                        break;
-                    }
-                }
-            }
-            if (exist == false && smtcount != 0)
+
+            if (!voteAlreadyExists)
             {
                 var Vote_init_packet = new PacketBroadcastVote(headertoclient, voteGuid, questionlength);
                 var voteinitbytes = Vote_init_packet.Serialize(question);
-                foreach (var conversationEntry in server.conversations)
+
+                foreach (var client in clientlist.Where(c => c.features.Contains(Feature.SMTVerificationFeature)))
                 {
-                    var conversation = conversationEntry.Value;
-                    server.Send(voteinitbytes, conversation);
-                    logger.Info("Client initiate vote requst with SMTLIB question " + question + "Generating Vote with ID " + voteGuid);
+                    server.Send(voteinitbytes, server.conversations[client.convoid]);
                 }
 
+                ServerVoteId.AddVoteToList(ServerActiveQuestionList, voteGuid, question, 1, numClientsWithSMT);
 
-
-                ServerVoteId.AddVoteToList(ServerActiveQuestionList, voteGuid, question, 1, smtcount);
-                Console.WriteLine();
-                Console.WriteLine();
-                Console.WriteLine();
-                foreach (ServerVoteId ServerVoteId in ServerActiveQuestionList)
+                new Thread(() =>
                 {
-                    Console.WriteLine($"ServerVoteID{ServerVoteId.voteid}, Question{ServerVoteId.question}");
-                }
-                Console.WriteLine();
-                Console.WriteLine();
-                Console.WriteLine();
-            }
-            else if (smtcount == 0)
-            {
-                Console.WriteLine("Cannot have 0 clients");
+                    Thread.Sleep(Shared.Pip.Constants.VOTE_TIMEOUT);
+
+                    var idx = ServerActiveQuestionList.FindIndex(v => v.voteid == voteGuid);
+                    if (idx != -1)
+                    {
+                        logger.Info("Timeout elapsed for vote " + voteGuid + ", broadcasting current response");
+
+                        broadcastVoteResult(server, ServerActiveQuestionList, ServerActiveQuestionList[idx], clientlist, filePath);
+                    }
+                }).Start();
             }
 
         }
 
-        internal static void PipServerBroadcastSimpleQuestion(TxpServer server, byte[] data, List<ServerVoteId> ServerActiveQuestionList, List<ServerListofClients> clientlist)
+        internal static void PipServerBroadcastSimpleQuestion(TxpServer server, byte[] data, List<ServerVoteId> ServerActiveQuestionList, List<ServerListofClients> clientlist, string filePath)
         {
-            foreach (ServerVoteId ServerVoteId in ServerActiveQuestionList)
-            {
-                Console.WriteLine($"ServerVoteID{ServerVoteId.voteid}, Question{ServerVoteId.question}");
-            }
             (PacketRequestVote recievedpacktestvote, string question) = PacketRequestVote.Deserialize(data);
             var sendQuestion = question;
             var questionlength = (uint)question.Length;
             var headertoclient = new Header(PacketType.Vote_Broadcast_Simple_S2C);
             Guid voteGuid = recievedpacktestvote.Getguid();
-            bool exist = false;
-            foreach (ServerVoteId ServerVoteId in ServerActiveQuestionList)
+
+            logger.Info("Client initiate vote requst with simple question {" + question + "} Generating Vote with ID " + voteGuid);
+
+            var voteAlreadyExists = ServerActiveQuestionList.Exists(v => v.voteid == voteGuid);
+
+            var numClientsWithSimple = clientlist.Count(c => c.features.Contains(Feature.SimpleVerificationFeature));
+
+            if (numClientsWithSimple == 0)
             {
-                Console.WriteLine("FALSE REPORTED");
-                if (ServerVoteId.voteid == voteGuid)
-                {
-                    exist = true;
-                }
+                logger.Warn("Client requested Simple vote, but no clients support Simple Voting. Ignoring.");
+                return;
             }
-            if (exist == false)
+
+            if (!voteAlreadyExists)
             {
                 var Vote_init_packet = new PacketBroadcastVote(headertoclient, voteGuid, questionlength);
                 var voteinitbytes = Vote_init_packet.Serialize(question);
-                foreach (var conversationEntry in server.conversations)
+
+                foreach (var client in clientlist.Where(c => c.features.Contains(Feature.SimpleVerificationFeature)))
                 {
-                    var conversation = conversationEntry.Value;
-                    server.Send(voteinitbytes, conversation);
-                    logger.Info("Client initiate vote requst with simple question " + question + "Generating Vote with ID " + voteGuid);
+                    logger.Debug($"Sending vote request to client {client.convoid:X}");
+
+                    server.Send(voteinitbytes, server.conversations[client.convoid]);
                 }
 
-                int simplecount = 0;
-                foreach (var ServerListofClients in clientlist)
-                {
-                    for (int i = 0; i < ServerListofClients.numFeatures; i++)
-                    {
-                        if (ServerListofClients.features[i] == Feature.SimpleVerificationFeature && ServerListofClients.convoid != 0)
-                        {
-                            {
-                                Console.WriteLine("added simple count");
-                                simplecount++;
-                                break;
-                            }
-
-                        }
-                    }
-                }
+                int simplecount = clientlist.Count(c => c.features.Contains(Feature.SimpleVerificationFeature));
 
                 ServerVoteId.AddVoteToList(ServerActiveQuestionList, voteGuid, question, 1, simplecount);
-                Console.WriteLine();
-                Console.WriteLine();
-                Console.WriteLine();
-                foreach (ServerVoteId ServerVoteId in ServerActiveQuestionList)
-                {
-                    Console.WriteLine($"ServerVoteID{ServerVoteId.voteid}, Question{ServerVoteId.question}, Question type {ServerVoteId.votetype} with clientcount {ServerVoteId.typeclientcount}");
-                }
-                Console.WriteLine();
-                Console.WriteLine();
-                Console.WriteLine();
-            }
 
+                new Thread(() =>
+                {
+                    Thread.Sleep(Shared.Pip.Constants.VOTE_TIMEOUT);
+
+                    var idx = ServerActiveQuestionList.FindIndex(v => v.voteid == voteGuid);
+                    if (idx != -1)
+                    {
+                        logger.Info("Timeout elapsed for vote " + voteGuid + ", broadcasting current response");
+
+                        broadcastVoteResult(server, ServerActiveQuestionList, ServerActiveQuestionList[idx], clientlist, filePath);
+                    }
+                }).Start();
+            }
         }
 
         internal static void SendInfo(TxpServer server, TxpClientConversation clientState, List<ServerListofClients> clientsList, byte[] data, uint convoid)
@@ -174,6 +123,9 @@ namespace _33D03.Server
             byte[] sendinfobyte = infopack.SerializeListOfServerListofClients(clientsList);
             Console.WriteLine($"sent client info{infopack.header} {infopack.numClients}");
             Console.WriteLine(BitConverter.ToString(sendinfobyte));
+
+            logger.Debug($"Sending information about {infopack.numClients} clients");
+
             server.Send(sendinfobyte, clientState);
         }
 
@@ -186,108 +138,103 @@ namespace _33D03.Server
         {
             Header header = PacketHello.FromBytes(data);
             (PacketHello structtest, Feature[] features) = PacketHello.Deserialize(data);
-            bool exists = false;
-            foreach (var ServerListofClients in clientsList)
-            {
-                if (ServerListofClients.convoid == clientState.ConversationId)
-                {
-                    exists = true;
-                    break;
-                }
-            }
-            if (exists == false)
+
+            if (!clientsList.Any(c => c.convoid == clientState.ConversationId))
             {
                 AddMoreClients(clientsList, convoid, structtest.numFeatures, features);
             }
 
             var sendhdr = new Header(PacketType.Hello_S2C);
-            byte[] hellos2cdata = sendhdr.ToBytes();
+            var hello_back = new PacketHello(sendhdr);
+            var serverFeatures = Enum.GetValues<Feature>();
+            hello_back.numFeatures = (ushort)serverFeatures.Length;
+            var hellos2cdata = hello_back.Serialize(serverFeatures);
+
             server.Send(hellos2cdata, clientState);
-            Console.WriteLine();
-            Console.WriteLine();
-            Console.WriteLine("list");
+
+            logger.Debug($"Hello from {clientState.ConversationId} received. Current clients list:");
             foreach (var ServerListofClients in clientsList)
             {
-                Console.WriteLine(ServerListofClients.convoid + " " + ServerListofClients.numFeatures + $"{String.Join(", ", ServerListofClients.features)}");
+                logger.Debug($"{ServerListofClients.convoid:X} - {ServerListofClients.numFeatures} features - {String.Join(", ", ServerListofClients.features)}");
             }
-            Console.WriteLine();
-            Console.WriteLine();
-            Console.WriteLine();
+
             //SendInfo(server,clientState ,clientsList,  data,  convoid);
         }
 
         internal static ushort OrganizeData(TxpServer server, int satcount, int unsatcount, int total)
         {
-            if (satcount > unsatcount) return 1;
-            else if (satcount <= unsatcount) return 0;
-            else return 2;
+            if (satcount > unsatcount) 
+                return 1;
+            else if (satcount < unsatcount) 
+                return 0;
+            else 
+                return 2;
         }
 
-        internal static void handlingvoteresults(TxpServer txpServer, ref List<ServerVoteId> listvote, byte[] data, string filePath)
+        internal static void handlingvoteresults(TxpServer txpServer, ref List<ServerVoteId> listvote, List<ServerListofClients> clientsList, byte[] data, string filePath)
         {
             PacketAnswerVote voteresultpacket = PacketAnswerVote.FromBytes(data);
-            logger.Info("Client answered vote");
-            Console.WriteLine("vote counter + 1");
-            ushort final = 0;
-            int j = 0;
-            foreach (var ServerVoteID in listvote)
-            {
 
-                if (ServerVoteID.voteid == voteresultpacket.GetGuid())
-                {
-                    break;
-                }
-                j++;
+            var voteResponse = voteresultpacket.GetResponse();
+            var voteGuid = voteresultpacket.GetGuid();
+
+            int j = listvote.FindIndex(c => c.voteid == voteGuid);
+
+            if (j == -1)
+            {
+                logger.Warn($"Count not find vote for GUID {voteGuid}. Timeout could have elapsed.");
+                return;
             }
-            Console.WriteLine(listvote[j].vote_counter + " " + listvote[j].unsat_counter + " " + listvote[j].sat_counter + "      " + listvote[j].typeclientcount);
+
             ServerVoteId temp = listvote[j];
-            Console.WriteLine("temp alloc successful");
-            if (voteresultpacket.GetResponse() == 1) temp.sat_counter++;
-            else if (voteresultpacket.GetResponse() == 0) temp.unsat_counter++;
+
+            if (voteResponse == VoteResponse.SAT) 
+                temp.sat_counter++;
+            else if (voteResponse == VoteResponse.UNSAT) 
+                temp.unsat_counter++;
             temp.vote_counter += 1;
+
             listvote[j] = temp;
-            Console.WriteLine(listvote[j].vote_counter + " " + listvote[j].unsat_counter + " " + listvote[j].sat_counter + "      " + listvote[j].typeclientcount);
-            Console.WriteLine(voteresultpacket.GetResponse());
-            Console.WriteLine(txpServer.conversations.Count);
-            Console.WriteLine();
+
+            logger.Info($"Received vote response {voteResponse} for vote {voteGuid}");
+            logger.Info($"Current vote state: {listvote[j].vote_counter} votes, {listvote[j].sat_counter} SAT, {listvote[j].unsat_counter} UNSAT, from {listvote[j].typeclientcount} supporting clients");
+
             if (listvote[j].vote_counter == listvote[j].typeclientcount)
             {
-                final = PipServer.OrganizeData(txpServer, listvote[j].unsat_counter, listvote[j].sat_counter, listvote[j].vote_counter);
-                Guid tempguid = voteresultpacket.GetGuid();
+                broadcastVoteResult(txpServer, listvote, listvote[j], clientsList, filePath);
+            }
+        }
 
+        private static void broadcastVoteResult(TxpServer txpServer, List<ServerVoteId> listvote, ServerVoteId vote, List<ServerListofClients> clientsList, string filePath)
+        {
+            var voteGuid = vote.voteid;
 
-                int listcount = listvote.Count;
-                int vote_count = listvote[j].vote_counter;
-                int sat_counter = listvote[j].sat_counter;
-                int unsat_counter = listvote[j].unsat_counter;
-                for (int i = listvote.Count - 1; i >= 0; i--)
-                {
-                    if (listvote[i].voteid == tempguid)
-                    {
-                        listvote.RemoveAt(i);
-                        break;
-                    }
-                }
+            ushort final = PipServer.OrganizeData(txpServer, vote.sat_counter, vote.unsat_counter, vote.vote_counter);
+            Guid tempguid = voteGuid;
 
-                Header temphdr = new Header(PacketType.Vote_Broadcast_Vote_Result_S2C);
-                PacketBroadcastVoteResult ResultS2Cpacket = new PacketBroadcastVoteResult(temphdr, tempguid, final);
-                string resultStats = $"Total votes: {vote_count}, Satcount: {sat_counter}, Unsatcount: {unsat_counter}";
-                byte[] finaldata = ResultS2Cpacket.Serialize(resultStats);
-                foreach (var conversationEntry in txpServer.conversations)
-                {
-                    var conversation = conversationEntry.Value;
-                    txpServer.Send(finaldata, conversation);
-                }
-                Console.WriteLine(vote_count + " " + unsat_counter + " " + sat_counter);
-                logger.Info($"final packet result for guid {voteresultpacket.GetGuid()} is {final}");
-                var ServerLogToWrite = new ServerVoteLog(voteresultpacket.GetGuid(), final);
-                DateTime currentTime = DateTime.Now;
+            int vote_count = vote.vote_counter;
+            int sat_counter = vote.sat_counter;
+            int unsat_counter = vote.unsat_counter;
+            Feature voteFeatureType = vote.votetype == 0 ? Feature.SimpleVerificationFeature : Feature.SMTVerificationFeature;
 
-                using (StreamWriter writer = new StreamWriter(filePath, true))
-                {
-                    writer.Write(currentTime + " " + ServerLogToWrite.GetGuid() + " ");
-                    writer.WriteLine(final);
-                }
+            listvote.RemoveAll(v => v.voteid == tempguid);
+
+            Header temphdr = new Header(PacketType.Vote_Broadcast_Vote_Result_S2C);
+            PacketBroadcastVoteResult ResultS2Cpacket = new PacketBroadcastVoteResult(temphdr, tempguid, final);
+
+            string resultStats = $"Total votes: {vote_count}, Satcount: {sat_counter}, Unsatcount: {unsat_counter}";
+            byte[] finaldata = ResultS2Cpacket.Serialize(resultStats);
+            foreach (var client in clientsList.Where(c => c.features.Contains(voteFeatureType)))
+            {
+                txpServer.Send(finaldata, txpServer.conversations[client.convoid]);
+            }
+
+            logger.Info($"Vote {voteGuid}: {resultStats} - Final result is {final}");
+
+            using (StreamWriter writer = new StreamWriter(filePath, true))
+            {
+                writer.Write(DateTime.Now + " " + voteGuid + " ");
+                writer.WriteLine(final);
             }
         }
 
@@ -295,15 +242,8 @@ namespace _33D03.Server
         {
             logger.Info($"Client disconnected: CID {clientconversation.ConversationId}");
 
-            for (int i = clientsList.Count - 1; i >= 0; i--)
-            {
-                if (clientsList[i].convoid == clientconversation.ConversationId)
-                {
-                    clientsList.RemoveAt(i);
-                    // If you're sure there's only one client to remove, you can break after removing.
-                    break;
-                }
-            }
+            clientsList.RemoveAll(c => c.convoid == clientconversation.ConversationId);
+
             BroadcastUpdatedClientList(clientsList, server);
         }
 

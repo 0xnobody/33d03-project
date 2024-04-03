@@ -34,6 +34,10 @@ namespace _33D03.Shared.Txp
 
             resetEvent = new ManualResetEvent(false);
             workerThread = new Thread(WorkerFunction);
+        }
+
+        public void Start()
+        {
             workerThread.Start();
         }
 
@@ -85,7 +89,9 @@ namespace _33D03.Shared.Txp
                 type = Shared.Txp.PacketType.SYN
             };
 
-            logger.Info($"Sending SYN with CID {convId}");
+            header.checksum = header.CalculateChecksum(header.ToBytes());
+
+            logger.Trace($"Sending SYN with CID {convId}");
 
             byte[] ackPacket = header.ToBytes();
             client.Send(ackPacket, ackPacket.Length, lastEndPoint);
@@ -110,7 +116,9 @@ namespace _33D03.Shared.Txp
                 type = Shared.Txp.PacketType.SYN_ACK
             };
 
-            logger.Info($"Sending SYN ACK with CID {convId}");
+            header.checksum = header.CalculateChecksum(header.ToBytes());
+
+            logger.Trace($"Sending SYN ACK with CID {convId}");
 
             byte[] ackPacket = header.ToBytes();
             client.Send(ackPacket, ackPacket.Length, endPoint);
@@ -120,6 +128,11 @@ namespace _33D03.Shared.Txp
         {
             resetEvent.Reset();
             synAttempts = 0;
+        }
+
+        public void AssignCID(uint cid)
+        {
+            convId = cid;
         }
     }
 }

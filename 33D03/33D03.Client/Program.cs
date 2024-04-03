@@ -165,16 +165,15 @@ namespace _33D03.Client
                 string filePath = @$"C:\PipList\client{Guid.NewGuid()}_output.txt";
                 client.OnPacketReceived += (data) =>
                 {
+                    logger.Trace($"client received data {BitConverter.ToString(data).Replace("-", "")}");
+
                     OnPacketRecievedHandler(client, data, HasSmtVerification);
                 };
-
-                Thread StartThread = new Thread(new ThreadStart(client.Start));
-                StartThread.Start();
+                
+                client.Start();
 
                 Thread inputThread = new Thread(new ParameterizedThreadStart(ProcessInput));
                 inputThread.Start(client);
-
-
 
                 PipClient.SendHello(client, features);
 
@@ -292,8 +291,6 @@ namespace _33D03.Client
                 case PacketType.Vote_Broadcast_Simple_S2C:
                     OnVoteBroadCastSimpleVoteS2C(client, filePath, data);
                     break;
-
-
                 case PacketType.Hello_S2C:
                     UI.ServerConnected();
                     break;

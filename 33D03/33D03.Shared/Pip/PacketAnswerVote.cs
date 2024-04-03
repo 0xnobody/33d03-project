@@ -7,14 +7,21 @@ using System.Threading.Tasks;
 
 namespace _33D03.Shared.Pip
 {
+    public enum VoteResponse : ushort
+    {
+        UNSAT = 0,
+        SAT = 1,
+        UNKNOWN = 2
+    }
+
     [StructLayout(LayoutKind.Sequential, Pack = 1, Size = 36)]
     public struct PacketAnswerVote
     {
         public Header header;
         public Guid voteId;
-        public ushort response;
+        public VoteResponse response;
 
-        public PacketAnswerVote(Header constructheader, Guid constructvoteGuid, ushort constructResponse)       //constructor
+        public PacketAnswerVote(Header constructheader, Guid constructvoteGuid, VoteResponse constructResponse)       //constructor
         {
             header = constructheader;
             voteId = constructvoteGuid;
@@ -32,7 +39,7 @@ namespace _33D03.Shared.Pip
             return voteId;
         }
 
-        public ushort GetResponse()
+        public VoteResponse GetResponse()
         {
             return response;
         }
