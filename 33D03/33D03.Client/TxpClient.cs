@@ -201,6 +201,8 @@ namespace _33D03.Client
                 type = Shared.Txp.PacketType.PING_REQ
             };
 
+            header.checksum = header.CalculateChecksum(header.ToBytes());
+
             logger.Info($"Requesting CID");
 
             byte[] ackPacket = header.ToBytes();

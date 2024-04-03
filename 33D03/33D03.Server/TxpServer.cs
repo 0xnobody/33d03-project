@@ -139,7 +139,8 @@ namespace _33D03.Server
                     conversation = new TxpClientConversation(server, cid, remoteEndPoint);
                     conversations.Add(cid, conversation);
                     sendCID(conversation.ConversationId, remoteEndPoint);
-                    
+                    conversation.SynHandler.Start(); // Start sending periodic SYNs
+
                     conversation.SynHandler.OnMaxSYNAttemptsReached += () =>
                     {
                         logger.Warn($"Client {remoteEndPoint} did not respond to SYN-ACK, purging conversation ID {conversation.ConversationId}");
@@ -211,6 +212,8 @@ namespace _33D03.Server
                 finish = 1,
                 type = Shared.Txp.PacketType.PING_RES
             };
+
+            header.checksum = header.CalculateChecksum(header.ToBytes());
 
             logger.Info($"Assigning cid {cid:X} to client at {endpoint}");
 

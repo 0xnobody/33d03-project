@@ -37,7 +37,7 @@ namespace _33D03.Server
                 List<ServerVoteId> ServerActiveQuestionList = new List<ServerVoteId>();
 
                 Feature[] ServerFeatures = { Feature.SMTVerificationFeature, Feature.SimpleVerificationFeature, Feature.OCRFeature };
-                ServerclientsList.Add(new ServerListofClients(0, 3, ServerFeatures));
+                // ServerclientsList.Add(new ServerListofClients(0, 3, ServerFeatures));
                 // Subscribe to the OnPacketReceived event with an anonymous method to handle incoming packets.
 
                 string filePath = @"C:\PipList\server_output.txt";
@@ -99,9 +99,7 @@ namespace _33D03.Server
                 PipServer.handlingvoteresults(txpServer, ref ServerActiveQuestionList, data, filePath);
             }
         }
-
     }
-
 }
 
 
