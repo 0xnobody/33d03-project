@@ -160,14 +160,11 @@ namespace _33D03.Client
 
                     OnPacketRecievedHandler(client, data, HasSmtVerification);
                 };
-
-                Thread StartThread = new Thread(new ThreadStart(client.Start));
-                StartThread.Start();
+                
+                client.Start();
 
                 Thread inputThread = new Thread(new ParameterizedThreadStart(ProcessInput));
                 inputThread.Start(client);
-
-
 
                 PipClient.SendHello(client, features);
 

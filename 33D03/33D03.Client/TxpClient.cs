@@ -35,6 +35,8 @@ namespace _33D03.Client
 
         private Shared.Txp.SynHandler synHandler;
 
+        private ManualResetEvent cidAssignedEvent = new ManualResetEvent(false);
+
         // Event triggered upon receiving a complete packet.
         public event PacketReceived OnPacketReceived;
 
@@ -77,6 +79,8 @@ namespace _33D03.Client
                 OnServerDisconnected?.Invoke();
                 Close();
             };
+
+            synHandler.Start();
         }
 
         // Starts the listening thread for incoming data.
@@ -91,6 +95,14 @@ namespace _33D03.Client
                     ListenForData();
                 }
             }).Start();
+
+            // Block until we receive a CID from the server.
+            //
+            do
+            {
+                RequestCID();
+            }
+            while (!cidAssignedEvent.WaitOne(2500));
         }
         
         public void Close()
@@ -125,10 +137,16 @@ namespace _33D03.Client
                 throw new Exception("Received null response from ListenForPacket");
             }
 
-            synHandler.RefreshSYNTimeout(remoteEndPoint);
-
             var header = pckt.Item1;
             var receivedData = pckt.Item2;
+
+            if (header.type == Shared.Txp.PacketType.PING_RES)
+            {
+                HandleCIDAssignment(header.convId);
+                return;
+            }
+
+            synHandler.RefreshSYNTimeout(remoteEndPoint);
 
             if (header.convId != conversationId)
             {
@@ -187,6 +205,17 @@ namespace _33D03.Client
 
             byte[] ackPacket = header.ToBytes();
             client.Send(ackPacket, ackPacket.Length, serverEndPoint);
+        }
+
+        private void HandleCIDAssignment(uint cid)
+        {
+            conversationId = cid;
+            segmentHandler.AssignCID(cid);
+            synHandler.AssignCID(cid);
+
+            logger.Info($"Client assigned cid {cid:X}");
+
+            cidAssignedEvent.Set();
         }
     }
 }

@@ -9,6 +9,7 @@ using System.Security.AccessControl;
 using Microsoft.VisualBasic;
 using _33D03.Shared.Pip;
 using _33D03.Shared.Txp;
+using System.Security.Cryptography;
 
 namespace _33D03.Server
 {
@@ -48,6 +49,7 @@ namespace _33D03.Server
 
         // Dictionary mapping conversation IDs to client conversation states.
         public Dictionary<uint, TxpClientConversation> conversations = new Dictionary<uint, TxpClientConversation>();
+        private uint currentConversationId = 1;
 
         private Mutex conversationsMutex = new Mutex(); // TODO: implement thread-safe conversation access
 
@@ -127,22 +129,33 @@ namespace _33D03.Server
             var header = pckt.Item1;
             var receivedData = pckt.Item2;
 
-            // If this is the first packet from a new conversation, create a new conversation object.
-            if (!conversations.ContainsKey(header.convId))
+            TxpClientConversation conversation = null;
+
+            lock (conversationsMutex)
             {
-                var conv = new TxpClientConversation(server, header.convId, remoteEndPoint);
-
-                conv.SynHandler.OnMaxSYNAttemptsReached += () =>
+                if (header.type == Shared.Txp.PacketType.PING_REQ)
                 {
-                    logger.Warn($"Client {remoteEndPoint} did not respond to SYN-ACK, purging conversation ID {conv.ConversationId}");
-                    disconnectClient(conv);
-                };
-
-                conversations.Add(header.convId, conv);
+                    var cid = currentConversationId++;
+                    conversation = new TxpClientConversation(server, cid, remoteEndPoint);
+                    conversations.Add(cid, conversation);
+                    sendCID(conversation.ConversationId, remoteEndPoint);
+                    
+                    conversation.SynHandler.OnMaxSYNAttemptsReached += () =>
+                    {
+                        logger.Warn($"Client {remoteEndPoint} did not respond to SYN-ACK, purging conversation ID {conversation.ConversationId}");
+                        disconnectClient(conversation);
+                    };
+                    return;
+                }
+                else
+                {
+                    if (!conversations.TryGetValue(header.convId, out conversation))
+                    {
+                        logger.Warn($"Conversation {header.convId:X} not found in server list");
+                        return;
+                    }
+                }
             }
-
-            // Retrieve the conversation object associated with this packet.
-            var conversation = conversations[header.convId];
 
             // Update the conversation's last known endpoint. This is important if the client's network address changes.
             conversation.LastEndPoint = remoteEndPoint;
@@ -184,6 +197,25 @@ namespace _33D03.Server
                     logger.Warn("Received unknown packet type");
                     break;
             }
+        }
+
+        private void sendCID(uint cid, IPEndPoint endpoint)
+        {
+            Shared.Txp.Header header = new Shared.Txp.Header
+            {
+                magic = Shared.Txp.Constants.MAGIC,
+                checksum = 0,
+                convId = cid,
+                seqNum = 0,
+                pcktNum = 0,
+                finish = 1,
+                type = Shared.Txp.PacketType.PING_RES
+            };
+
+            logger.Info($"Assigning cid {cid:X} to client at {endpoint}");
+
+            byte[] ackPacket = header.ToBytes();
+            server.Send(ackPacket, ackPacket.Length, endpoint);
         }
     }
 }

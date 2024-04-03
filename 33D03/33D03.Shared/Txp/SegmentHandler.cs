@@ -405,5 +405,10 @@ namespace _33D03.Shared.Txp
             byte[] ackPacket = header.ToBytes();
             udpClient.Send(ackPacket, ackPacket.Length, remoteEndPoint);
         }
+
+        public void AssignCID(uint cid)
+        {
+            conversationId = cid;
+        }
     }
 }

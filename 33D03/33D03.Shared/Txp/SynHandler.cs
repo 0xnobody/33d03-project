@@ -34,6 +34,10 @@ namespace _33D03.Shared.Txp
 
             resetEvent = new ManualResetEvent(false);
             workerThread = new Thread(WorkerFunction);
+        }
+
+        public void Start()
+        {
             workerThread.Start();
         }
 
@@ -124,6 +128,11 @@ namespace _33D03.Shared.Txp
         {
             resetEvent.Reset();
             synAttempts = 0;
+        }
+
+        public void AssignCID(uint cid)
+        {
+            convId = cid;
         }
     }
 }
