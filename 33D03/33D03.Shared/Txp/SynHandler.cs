@@ -91,7 +91,7 @@ namespace _33D03.Shared.Txp
 
             header.checksum = header.CalculateChecksum(header.ToBytes());
 
-            logger.Info($"Sending SYN with CID {convId}");
+            logger.Trace($"Sending SYN with CID {convId}");
 
             byte[] ackPacket = header.ToBytes();
             client.Send(ackPacket, ackPacket.Length, lastEndPoint);
@@ -118,7 +118,7 @@ namespace _33D03.Shared.Txp
 
             header.checksum = header.CalculateChecksum(header.ToBytes());
 
-            logger.Info($"Sending SYN ACK with CID {convId}");
+            logger.Trace($"Sending SYN ACK with CID {convId}");
 
             byte[] ackPacket = header.ToBytes();
             client.Send(ackPacket, ackPacket.Length, endPoint);

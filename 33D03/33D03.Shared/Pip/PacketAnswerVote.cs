@@ -7,6 +7,13 @@ using System.Threading.Tasks;
 
 namespace _33D03.Shared.Pip
 {
+    enum VoteResponse : ushort
+    {
+        UNSAT = 0,
+        SAT = 1,
+        UNKNOWN = 2
+    }
+
     [StructLayout(LayoutKind.Sequential, Pack = 1, Size = 36)]
     public struct PacketAnswerVote
     {

@@ -134,7 +134,7 @@ namespace _33D03.Client
                 // Setup logging
                 NLog.LogManager.Setup().LoadConfiguration(builder =>
                 {
-                    builder.ForLogger().FilterMinLevel(LogLevel.Trace).WriteToColoredConsole();
+                    builder.ForLogger().FilterMinLevel(LogLevel.Debug).WriteToColoredConsole();
                 });
 
                 string test = PipClient.GenerateEvalString();
@@ -282,8 +282,6 @@ namespace _33D03.Client
                 case PacketType.Vote_Broadcast_Simple_S2C:
                     OnVoteBroadCastSimpleVoteS2C(client, filePath, data);
                     break;
-
-
                 case PacketType.Hello_S2C:
                     Console.WriteLine("server waved hello!");
                     break;
