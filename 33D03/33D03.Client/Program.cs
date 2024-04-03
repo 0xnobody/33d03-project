@@ -51,6 +51,11 @@ namespace _33D03.Client
                         client.Send(Getinfobytes);
                     }
                 }
+                else
+                {
+                    Console.Clear();
+                    Console.WriteLine("INVALID INPUT");
+                }
             }
         }
 

@@ -211,8 +211,9 @@ namespace _33D03.Client
             var header = new Header(PacketType.Client_request_info);
             var requestpacket = new ClientToServerRequestInfo(header);
             byte[] sendinforequestbytestream = requestpacket.serialize();
+            Array.Reverse(sendinforequestbytestream);
             client.Send(sendinforequestbytestream);
-            logger.Info($"Client Sent info request to server");
+            logger.Info($"Client Sent info request to server{BitConverter.ToString(sendinforequestbytestream)}");
         }
 
         //gets info request bytes, reduces calculation when needed for flooding

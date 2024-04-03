@@ -141,7 +141,7 @@ namespace _33D03.Server
                     {
                         if (ServerListofClients.features[i] == Feature.SimpleVerificationFeature && ServerListofClients.convoid != 0)
                         {
-                            {   
+                            {
                                 Console.WriteLine("added simple count");
                                 simplecount++;
                                 break;
@@ -168,10 +168,12 @@ namespace _33D03.Server
 
         internal static void SendInfo(TxpServer server, TxpClientConversation clientState, List<ServerListofClients> clientsList, byte[] data, uint convoid)
         {
+            Console.WriteLine("sending client list");
             var infohdr = new Header(PacketType.Client_Info);
             var infopack = new PacketInfo(infohdr, clientsList.Count);
             byte[] sendinfobyte = infopack.SerializeListOfServerListofClients(clientsList);
             Console.WriteLine($"sent client info{infopack.header} {infopack.numClients}");
+            Console.WriteLine(BitConverter.ToString(sendinfobyte));
             server.Send(sendinfobyte, clientState);
         }
 

@@ -90,7 +90,8 @@ namespace _33D03.Server
         public static void OnPacketRecievedHandler(byte[] data, TxpServer txpServer, TxpClientConversation clientState, List<ServerListofClients> ServerclientsList, ref List<ServerVoteId> ServerActiveQuestionList, string filePath)
         {
             var receivedHeader = Header.FromBytes(data);
-
+            Console.WriteLine("raw bytes is " + BitConverter.ToString(data));
+            Console.WriteLine($"type is received header {receivedHeader.type}");
             int connectedclients = txpServer.conversations.Count;
             logger.Trace($"Received packet from CID {clientState.ConversationId} of type {receivedHeader.type}");
             if (receivedHeader.type == PacketType.Hello_C2S)
@@ -100,6 +101,7 @@ namespace _33D03.Server
             }
             else if (receivedHeader.type == PacketType.Client_request_info)
             {
+                Console.WriteLine("seinding info pakcets");
                 PipServer.SendInfo(txpServer, clientState, ServerclientsList, data, clientState.ConversationId);
             }
             else if (receivedHeader.type == PacketType.Vote_Request_Vote_C2S)
