@@ -7,7 +7,10 @@ using _33D03.Shared.Pip;
 using NLog.LayoutRenderers;
 using Microsoft.Z3;
 using System.Runtime.Serialization;
+using System.Text.RegularExpressions;
 using NLog;
+using OneOf.Types;
+using System.Data;
 
 namespace _33D03.Client
 {
@@ -41,7 +44,7 @@ namespace _33D03.Client
 
             //randomises type of SMT problem created by the generator
             //should produce mix of SAT and UNSAT
-            int diffProblems = random.Next(1,4);
+            int diffProblems = random.Next(1, 4);
             if (diffProblems == 0)
             {
                 int randVal = random.Next(-255, 255);
@@ -120,42 +123,126 @@ namespace _33D03.Client
             return smtBuilder.ToString();
         }
 
+        public static string GenerateEvalString()
+        {
+            StringBuilder evalString = new StringBuilder();
+            string expression = "";
+            string expression2 = "";
+
+            int numOperands = random.Next(2, 11);
+
+            for (int i = 0; i < numOperands; i++)
+            {
+                int operand = random.Next(-255, 255);
+                expression += operand;
+
+                if (i < numOperands - 1)
+                {
+                    char[] operators = { '+', '-', '*', '/' };
+                    char operatorChar = operators[random.Next(operators.Length)];
+                    expression += operatorChar;
+                }
+            }
+
+            int numOperands2 = random.Next(2, 11);
+
+            for (int i = 0; i < numOperands2; i++)
+            {
+                int operand2 = random.Next(-255, 255);
+                expression2 += operand2;
+
+                if (i < numOperands2 - 1)
+                {
+                    char[] operators = { '+', '-', '*', '/' };
+                    char operatorChar = operators[random.Next(operators.Length)];
+                    expression2 += operatorChar;
+                }
+            }
+
+            bool generateSat = random.Next(0, 2) == 0;
+            if (generateSat == true)
+            {
+                double result = EvaluateExpression(expression);
+                evalString.Append($"{expression} = {Math.Round(result)}");
+            }
+            else
+            {
+                double result = random.Next(-255, 255);
+                evalString.Append($"{expression} > {expression2}");
+            }
+            return evalString.ToString();
+        }
+
+        static double EvaluateExpression(string expression)
+        {
+            try
+            {
+                // DataTable.Compute returns an object, so we cast it to double
+                return Convert.ToDouble(new System.Data.DataTable().Compute(expression, null));
+            }
+            catch
+            {
+                throw; // Re-throw the exception to be caught by the caller
+            }
+        }
+
+        public static void VoteSimpleInit(TxpClient client)
+        {
+            var question = GenerateEvalString();
+            var questionlength = (uint)question.Length;
+            var header = new Header(PacketType.Vote_Request_Simple_C2S);
+            Guid voteGuid = Guid.NewGuid();
+            var Vote_init_packet = new PacketRequestVote(header, voteGuid, questionlength);
+            var voteinitbytes = Vote_init_packet.Serialize(question);
+            client.Send(voteinitbytes);
+            Console.WriteLine();
+            Console.WriteLine();
+            Console.WriteLine();
+            logger.Info("Client initiate vote requst with SMTLIB question" + question);
+            Console.WriteLine();
+            Console.WriteLine();
+            Console.WriteLine();
+        }
+
 
         //called for each VOTEINIT by client, sends randomly generated question
-        public static void Client_request_info(TxpClient client){
+        public static void Client_request_info(TxpClient client)
+        {
             var header = new Header(PacketType.Client_request_info);
             var requestpacket = new ClientToServerRequestInfo(header);
-            byte [] sendinforequestbytestream = requestpacket.serialize();
+            byte[] sendinforequestbytestream = requestpacket.serialize();
             client.Send(sendinforequestbytestream);
             logger.Info($"Client Sent info request to server");
         }
 
         //gets info request bytes, reduces calculation when needed for flooding
-        public static byte [] GetinfoBytes(){
+        public static byte[] GetinfoBytes()
+        {
             var header = new Header(PacketType.Client_request_info);
             var requestpacket = new ClientToServerRequestInfo(header);
-            byte [] sendinforequestbytestream = requestpacket.serialize();
+            byte[] sendinforequestbytestream = requestpacket.serialize();
             return sendinforequestbytestream;
         }
 
         //gests hello bytes, see how server responds.
-        public static byte [] GethelloBytes(){
+        public static byte[] GethelloBytes()
+        {
             var header = new Header(PacketType.Hello_C2S);
-            Feature [] features = {Feature.SimpleVerificationFeature, Feature.SMTVerificationFeature, Feature.OCRFeature};
+            Feature[] features = { Feature.SimpleVerificationFeature, Feature.SMTVerificationFeature, Feature.OCRFeature };
             var hellopacket = new PacketHello(header);
             hellopacket.numFeatures = (ushort)features.Length;
-            byte [] hellosendpacket = hellopacket.Serialize(features);
+            byte[] hellosendpacket = hellopacket.Serialize(features);
             return hellosendpacket;
         }
 
-        public static void SendHello(TxpClient client){
+        public static void SendHello(TxpClient client, Feature[] features)
+        {
             var header = new Header(PacketType.Hello_C2S);
-            Feature [] features = {Feature.SimpleVerificationFeature, Feature.SMTVerificationFeature, Feature.OCRFeature };
             var hellopacket = new PacketHello(header);
             hellopacket.numFeatures = (ushort)features.Length;
-            byte [] hellosendpacket = hellopacket.Serialize(features);
+            byte[] hellosendpacket = hellopacket.Serialize(features);
             client.Send(hellosendpacket);
-            logger.Info($"Client Sent hello to server with features {string.Join(", ",features)}");
+            logger.Info($"Client Sent hello to server with features {string.Join(", ", features)}");
         }
 
         public static void VoteInit(TxpClient client)
@@ -181,8 +268,7 @@ namespace _33D03.Client
             var header = new Header(PacketType.Vote_Answer_Vote_C2S);
             Guid voteGuid = voteID;
             uint result = SMTChecker(question);
-            Guid newguid = Guid.NewGuid();
-            var Client_Answer_Packet = new PacketAnswerVote(header, voteGuid,newguid, (ushort)result);
+            var Client_Answer_Packet = new PacketAnswerVote(header, voteGuid, (ushort)result);
             if (Client_Answer_Packet.GetResponse() == 1)
             {
                 Console.WriteLine("Satisfied");
@@ -194,8 +280,73 @@ namespace _33D03.Client
             else Console.WriteLine("Syntax Error");
             byte[] answerinitbytes = Client_Answer_Packet.Serialize();
             client.Send(answerinitbytes);
-            Console.WriteLine("NEW GUID FOR THIS CLIENT RESPONSE IS "+ Client_Answer_Packet.GetNewGuid());
-            logger.Info("Client respond with " + Client_Answer_Packet.GetResponse() + "vote ID: " +voteGuid);
+            logger.Info("Client respond with " + Client_Answer_Packet.GetResponse() + "vote ID: " + voteGuid);
+        }
+
+        public static void ClientAnswerVoteSimple(TxpClient client, string question, Guid voteID)
+        {
+            var header = new Header(PacketType.Vote_answer_Simple_C2S);
+            Guid voteGuid = voteID;
+            uint result = EvalChecker(question);
+            var Client_Answer_Packet = new PacketAnswerVote(header, voteGuid, (ushort)result);
+            if (Client_Answer_Packet.GetResponse() == 1)
+            {
+                Console.WriteLine("Satisfied");
+            }
+            else if (Client_Answer_Packet.GetResponse() == 0)
+            {
+                Console.WriteLine("Unsatisfied");
+            }
+            else Console.WriteLine("Syntax Error");
+            byte[] answerinitbytes = Client_Answer_Packet.Serialize();
+            client.Send(answerinitbytes);
+            logger.Info("Client respond with " + Client_Answer_Packet.GetResponse() + "vote ID: " + voteGuid);
+        }
+
+        public static ushort EvalChecker(string question)
+        {
+            try
+            {
+                // Regular expression to identify comparison operators and split the expression accordingly
+                Regex regex = new Regex(@"(==|<=|>=|<|>|=)");
+                Match match = regex.Match(question);
+
+                if (!match.Success || match.Groups.Count < 1)
+                {
+                    throw new ArgumentException("Invalid or missing comparison operator");
+                }
+
+                string operatorFound = match.Groups[0].Value;
+                string[] parts = regex.Split(question, 2);
+
+                string leftSide = parts[0].Trim();
+                string rightSide = parts[2].Trim(); // parts[1] will be the operator, which we already have
+
+                // Evaluate both sides
+                DataTable dataTable = new DataTable();
+                double leftResult = Convert.ToDouble(dataTable.Compute(leftSide, ""));
+                double rightResult = Convert.ToDouble(dataTable.Compute(rightSide, ""));
+                Console.WriteLine(leftResult);
+                Console.WriteLine(rightResult);
+                // Perform the comparison
+                bool comparisonResult = operatorFound switch
+                {
+                    "<" => (int)leftResult < (int)rightResult,
+                    ">" => (int)leftResult > (int)rightResult,
+                    "<=" => (int)leftResult <= (int)rightResult,
+                    ">=" => (int)leftResult >= (int)rightResult,
+                    "==" => (int)leftResult == (int)rightResult,
+                    "=" => (int)leftResult == (int)rightResult,
+                    _ => throw new ArgumentException("no comparator found")
+                };
+
+
+                return (ushort)(comparisonResult ? 1 : 0);
+            }
+            catch
+            {
+                throw new ArgumentException("something went wrong");
+            }
         }
 
         public static ushort SMTChecker(string question)

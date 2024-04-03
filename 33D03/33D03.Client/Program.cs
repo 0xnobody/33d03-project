@@ -36,9 +36,9 @@ namespace _33D03.Client
                 {
                     helpPrint();
                 }
-                else if (input == "hello")
+                else if (input == "votesimple")
                 {
-                    PipClient.SendHello(client);
+                    PipClient.VoteSimpleInit(client);
                 }
                 else if (input == "flood")
                 {
@@ -54,6 +54,78 @@ namespace _33D03.Client
             }
         }
 
+        public static Feature[] SelectInput()
+        {
+            string input = "something string";
+            Console.WriteLine("Feature selection");
+            Console.WriteLine("1 for smt eval feature");
+            Console.WriteLine("2 for ocr eval feature");
+            Feature[] features = new Feature[3];
+            int count = 0;
+            while (input != "" && input != null)
+            {
+                input = Console.ReadLine();
+                if (count == 3) break;
+                if (input == "1")
+                {
+                    bool hassmt = false;
+                    for (int i = 0; i < count; i++)
+                    {
+
+                        if (features[i] == Feature.SMTVerificationFeature)
+                        {
+                            hassmt = true;
+                            break;
+                        }
+                    }
+                    if (hassmt == false)
+                    {
+                        features[count] = Feature.SMTVerificationFeature;
+                        count++;
+                    };
+                }
+                else if (input == "0")
+                {
+                    bool hassmt = false;
+                    for (int i = 0; i < count; i++)
+                    {
+
+                        if (features[i] == Feature.SimpleVerificationFeature)
+                        {
+                            hassmt = true;
+                            break;
+                        }
+                    }
+                    if (hassmt == false)
+                    {
+                        features[count] = Feature.SimpleVerificationFeature;
+                        count++;
+                    };
+                }
+
+                else if (input == "2")
+                {
+                    bool hasocr = false;
+                    for (int i = 0; i < count; i++)
+                    {
+
+                        if (features[i] == Feature.OCRFeature)
+                        {
+                            hasocr = true;
+                            break;
+                        }
+                    }
+                    if (hasocr == false)
+                    {
+                        features[count] = Feature.OCRFeature;
+                        count++;
+                    };
+                }
+            }
+
+            return features;
+        }
+
 
         private static void Main(string[] args)
         {
@@ -65,11 +137,26 @@ namespace _33D03.Client
                     builder.ForLogger().FilterMinLevel(LogLevel.Trace).WriteToColoredConsole();
                 });
 
+                string test = PipClient.GenerateEvalString();
+                Console.WriteLine(test);
+
+                Feature[] features = SelectInput();
+                bool HasSmtVerification = false;
+                for (int i = 0; i < 3; i++)
+                {
+
+                    if (features[i] == Feature.SMTVerificationFeature)
+                    {
+                        HasSmtVerification = true;
+                        break;
+                    }
+                }
+
                 TxpClient client = new TxpClient("127.0.0.1", 24588);
                 string filePath = @$"C:\PipList\client{Guid.NewGuid()}_output.txt";
                 client.OnPacketReceived += (data) =>
                 {
-                    OnPacketRecievedHandler(client, data);
+                    OnPacketRecievedHandler(client, data, HasSmtVerification);
                 };
 
                 Thread StartThread = new Thread(new ThreadStart(client.Start));
@@ -80,7 +167,7 @@ namespace _33D03.Client
 
 
 
-                PipClient.SendHello(client);
+                PipClient.SendHello(client, features);
 
                 helpPrint();
 
@@ -103,6 +190,7 @@ namespace _33D03.Client
             Console.WriteLine("vote -- initiate vote");
             Console.WriteLine("info -- request Client list from server");
             Console.WriteLine("exit -- exits");
+            Console.WriteLine("votesimple -- eval non smt equations");
             Console.WriteLine("flood -- floods server, but client uses more resources, even when ignoring incopming packets...");
         }
 
@@ -129,7 +217,7 @@ namespace _33D03.Client
             }
         }
 
-        private static void OnVoteBroadCastVoteS2C(string filePath, byte[] data)
+        private static void OnVoteBroadCastVoteResultS2C(string filePath, byte[] data)
         {
             logger.Trace($"Received Reuslt packet from server with dat: {PacketBroadcastVoteResult.FromBytes(data)}");
             (PacketBroadcastVoteResult voteResult, string resultStats) = PacketBroadcastVoteResult.Deserialize(data);
@@ -152,8 +240,29 @@ namespace _33D03.Client
             }
         }
 
+        private static void OnVoteBroadCastSimpleVoteS2C(TxpClient client, string filePath, byte[] data)
+        {
+            logger.Trace($"Received packet from Server with data: {PacketBroadcastVote.Deserialize(data)}");
+            (PacketBroadcastVote recievedBroadcastPacket, string question) = PacketBroadcastVote.Deserialize(data);
+            PacketType headerType = recievedBroadcastPacket.HeaderInfo.type;
+            Guid voteID = recievedBroadcastPacket.GetGuid();
+            Console.WriteLine("header type is " + headerType);
+            if (headerType == PacketType.Vote_Broadcast_Simple_S2C)
+            {
+                Console.WriteLine("Solving for smtlib question: " + question);
+                PipClient.ClientAnswerVoteSimple(client, question, voteID);
+                DateTime currentTimes = DateTime.Now;
+                string timedatas = currentTimes + " ";
+                using (StreamWriter writer = new StreamWriter(filePath, true))
+                {
+                    writer.Write(timedatas + " " + question + " ");
+                    Console.WriteLine("wrote to " + filePath);
+                }
+            }
+        }
 
-        private static void OnPacketRecievedHandler(TxpClient client, byte[] data)
+
+        private static void OnPacketRecievedHandler(TxpClient client, byte[] data, bool ClientSmtCapabilities)
         {
             var pipHeader = Header.FromBytes(data);
             string filePath = @$"C:\PipList\client{Guid.NewGuid()}_output.txt";
@@ -161,12 +270,20 @@ namespace _33D03.Client
             switch (pipHeader.type)
             {
                 case PacketType.Vote_Broadcast_Vote_S2C:
-                    OnVoteBroadCastVoteS2C(client, filePath, data);
+                    if (ClientSmtCapabilities == true)
+                    {
+                        OnVoteBroadCastVoteS2C(client, filePath, data);
+                    }
+                    else Console.WriteLine("cannot solve for smt question type");
                     break;
 
                 case PacketType.Vote_Broadcast_Vote_Result_S2C:
-                    OnVoteBroadCastVoteS2C(filePath, data);
+                    OnVoteBroadCastVoteResultS2C(filePath, data);
                     break;
+                case PacketType.Vote_Broadcast_Simple_S2C:
+                    OnVoteBroadCastSimpleVoteS2C(client, filePath, data);
+                    break;
+
 
                 case PacketType.Hello_S2C:
                     Console.WriteLine("server waved hello!");
