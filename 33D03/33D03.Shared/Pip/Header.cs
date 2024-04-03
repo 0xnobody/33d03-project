@@ -14,11 +14,11 @@ namespace _33D03.Shared.Pip // Declaring a namespace for organizing related code
         Vote_Request_Simple_C2S = 0x0002,
         Vote_Broadcast_Simple_S2C = 0x0003,
         Vote_answer_Simple_C2S = 0x0004,
-        Vote_Broadcast_Vote_Result_Simple_S2C = 0x0005,
+        //Vote_Broadcast_Vote_Result_Simple_S2C = 0x0005,
         Vote_Request_Vote_C2S = 0x0008, // Defining an enumeration member named Vote_Request_Vote_C2S with value 0x0002.
         Vote_Broadcast_Vote_S2C = 0x0009, // Defining an enumeration member named Vote_Broadcast_Vote_S2C with value 0x0003.
         Vote_Answer_Vote_C2S = 0x00010, // Defining an enumeration member named Vote_Answer_Vote_C2S with value 0x0004.
-        Vote_Broadcast_Vote_Result_S2C = 0x00011, // Defining an enumeration member named Vote_Broadcast_Vote_Result_S2C with value 0x0005.
+        Vote_Broadcast_Vote_Result_S2C = 0x0005, // Defining an enumeration member named Vote_Broadcast_Vote_Result_S2C with value 0x0005.
         Client_Info = 0x00012, //s2c client info list
         Client_request_info = 0x00013 //c2s request info list
     }

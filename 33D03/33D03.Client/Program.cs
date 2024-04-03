@@ -153,7 +153,7 @@ namespace _33D03.Client
                 }
 
                 TxpClient client = new TxpClient("127.0.0.1", 8080);
-                string filePath = @$"C:\PipList\client{Guid.NewGuid()}_output.txt";
+                string filePath = @$"/home/james/Desktop/pip/junk/client{Guid.NewGuid()}_output.txt";
                 client.OnPacketReceived += (data) =>
                 {
                     OnPacketRecievedHandler(client, data, HasSmtVerification);
@@ -268,7 +268,7 @@ namespace _33D03.Client
             Console.WriteLine();
             Console.WriteLine("Raw bytes data is " + BitConverter.ToString(data));
             Console.WriteLine();
-            string filePath = @$"C:\PipList\client{Guid.NewGuid()}_output.txt";
+            string filePath = @$"/home/james/Desktop/pip/junk/client{Guid.NewGuid()}_output.txt";
 
             switch (pipHeader.type)
             {

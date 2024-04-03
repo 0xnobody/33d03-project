@@ -43,7 +43,7 @@ namespace _33D03.Server
                 ServerclientsList.Add(new ServerListofClients(0, 3, ServerFeatures));
                 // Subscribe to the OnPacketReceived event with an anonymous method to handle incoming packets.
 
-                string filePath = @"C:\PipList\server_output.txt";
+                string filePath = @"/home/james/Desktop/pip/junk/server_output.txt";
 
                 txpServer.OnPacketReceived += (clientState, data) =>
                 {
@@ -53,24 +53,6 @@ namespace _33D03.Server
                 {
                     PipServer.ClientDisconnected(conversation, ServerclientsList, txpServer);
                 };
-
-                /*// Logs the receipt of a packet using Trace level, including the client's ID and the packet data as a hex string.
-                logger.Trace($"Received packet from CID {clientState.ConversationId} with data: {}");
-
-                // Checks if the received data matches a specific byte sequence.
-                if (data.SequenceEqual(new byte[] { 0x01, 0x02, 0x03, 0x04 }))
-                {
-                    // Logs a Debug level message indicating a specific test packet was received.
-                    logger.Debug("Received test packet 1, sending back 0x13 0x13 0x13 0x13");
-
-                    // Prepares a response byte array to send back to the client.
-                    byte[] response = new byte[] { 0x13, 0x13, 0x13, 0x13 };
-                    // Sends the prepared response to the client who sent the original packet.
-                    txpServer.Send(response, clientState);
-                }*/
-
-                // Starts the server to begin listening for incoming connections and packets.
-
 
                 txpServer.Start();
 
