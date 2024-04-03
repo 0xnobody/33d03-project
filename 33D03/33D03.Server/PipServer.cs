@@ -185,9 +185,9 @@ namespace _33D03.Server
 
             ServerVoteId temp = listvote[j];
 
-            if (voteResponse == 1) 
+            if (voteResponse == VoteResponse.SAT) 
                 temp.sat_counter++;
-            else if (voteResponse == 0) 
+            else if (voteResponse == VoteResponse.UNSAT) 
                 temp.unsat_counter++;
             temp.vote_counter += 1;
 

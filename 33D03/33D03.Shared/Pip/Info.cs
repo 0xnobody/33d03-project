@@ -76,7 +76,7 @@ namespace _33D03.Shared.Pip
             int currentIndex = headerSize;
 
             // Serialize number of clients
-            Buffer.BlockCopy(BitConverter.GetBytes((uint)numClients), 0, completedPacketBytes, currentIndex, 4);
+            Buffer.BlockCopy(Serialization.GetBytes((uint)numClients), 0, completedPacketBytes, currentIndex, 4);
             Console.WriteLine(numClients);
             Console.WriteLine(BitConverter.ToString(completedPacketBytes));
             currentIndex += 4;
@@ -84,12 +84,12 @@ namespace _33D03.Shared.Pip
             // Serialize each ServerListofClients struct
             foreach (var client in clients)
             {
-                Buffer.BlockCopy(BitConverter.GetBytes(client.convoid), 0, completedPacketBytes, currentIndex, 4);
+                Buffer.BlockCopy(Serialization.GetBytes(client.convoid), 0, completedPacketBytes, currentIndex, 4);
                 Console.WriteLine(client.convoid);
                 Console.WriteLine(BitConverter.ToString(completedPacketBytes));
                 currentIndex += 4;
 
-                Buffer.BlockCopy(BitConverter.GetBytes(client.numFeatures), 0, completedPacketBytes, currentIndex, 4);
+                Buffer.BlockCopy(Serialization.GetBytes(client.numFeatures), 0, completedPacketBytes, currentIndex, 4);
                 Console.WriteLine(client.numFeatures);
                 Console.WriteLine(BitConverter.ToString(completedPacketBytes));
                 currentIndex += 4;
@@ -97,17 +97,17 @@ namespace _33D03.Shared.Pip
                 // Assuming there are at least 3 features per client
                 if (client.features.Length >= 3)
                 {
-                    Buffer.BlockCopy(BitConverter.GetBytes((ushort)client.features[0]), 0, completedPacketBytes, currentIndex, 2);
+                    Buffer.BlockCopy(Serialization.GetBytes((ushort)client.features[0]), 0, completedPacketBytes, currentIndex, 2);
                     Console.WriteLine(client.features[0]);
                     Console.WriteLine(BitConverter.ToString(completedPacketBytes));
                     currentIndex += 2;
 
-                    Buffer.BlockCopy(BitConverter.GetBytes((ushort)client.features[1]), 0, completedPacketBytes, currentIndex, 2);
+                    Buffer.BlockCopy(Serialization.GetBytes((ushort)client.features[1]), 0, completedPacketBytes, currentIndex, 2);
                     Console.WriteLine(client.features[1]);
                     Console.WriteLine(BitConverter.ToString(completedPacketBytes));
                     currentIndex += 2;
 
-                    Buffer.BlockCopy(BitConverter.GetBytes((ushort)client.features[2]), 0, completedPacketBytes, currentIndex, 2);
+                    Buffer.BlockCopy(Serialization.GetBytes((ushort)client.features[2]), 0, completedPacketBytes, currentIndex, 2);
                     Console.WriteLine(client.features[2]);
                     Console.WriteLine(BitConverter.ToString(completedPacketBytes));
                     currentIndex += 2;
@@ -128,7 +128,7 @@ namespace _33D03.Shared.Pip
             currentIndex += headerSize;
 
             // Deserialize number of clients
-            uint numClients = BitConverter.ToUInt32(data, currentIndex);
+            uint numClients = Serialization.ToUInt32(data, currentIndex);
             currentIndex += 4;
 
             List<ServerListofClients> clients = new List<ServerListofClients>();
@@ -136,17 +136,17 @@ namespace _33D03.Shared.Pip
             for (int i = 0; i < numClients; i++)
             {
                 // Deserialize ConvoID and NumberOfFeatures
-                uint convoid = BitConverter.ToUInt32(data, currentIndex);
+                uint convoid = Serialization.ToUInt32(data, currentIndex);
                 currentIndex += 4;
 
-                int numFeatures = BitConverter.ToInt32(data, currentIndex);
+                int numFeatures = Serialization.ToInt32(data, currentIndex);
                 currentIndex += 4;
 
                 // Assuming 3 features per client, based on the updated requirement
                 Feature[] features = new Feature[3];
                 for (int j = 0; j < 3; j++) // Adjusted for 3 features
                 {
-                    features[j] = (Feature)BitConverter.ToUInt16(data, currentIndex);
+                    features[j] = (Feature)Serialization.ToUInt16(data, currentIndex);
                     currentIndex += 2;
                 }
 

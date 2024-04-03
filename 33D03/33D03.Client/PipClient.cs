@@ -267,13 +267,13 @@ namespace _33D03.Client
         {
             var header = new Header(PacketType.Vote_Answer_Vote_C2S);
             Guid voteGuid = voteID;
-            uint result = SMTChecker(question);
-            var Client_Answer_Packet = new PacketAnswerVote(header, voteGuid, (ushort)result);
-            if (Client_Answer_Packet.GetResponse() == 1)
+            var result = SMTChecker(question);
+            var Client_Answer_Packet = new PacketAnswerVote(header, voteGuid, result);
+            if (Client_Answer_Packet.GetResponse() == VoteResponse.SAT)
             {
                 Console.WriteLine("Satisfied");
             }
-            else if (Client_Answer_Packet.GetResponse() == 0)
+            else if (Client_Answer_Packet.GetResponse() == VoteResponse.UNSAT)
             {
                 Console.WriteLine("Unsatisfied");
             }
@@ -287,13 +287,13 @@ namespace _33D03.Client
         {
             var header = new Header(PacketType.Vote_answer_Simple_C2S);
             Guid voteGuid = voteID;
-            uint result = EvalChecker(question);
-            var Client_Answer_Packet = new PacketAnswerVote(header, voteGuid, (ushort)result);
-            if (Client_Answer_Packet.GetResponse() == 1)
+            var result = EvalChecker(question);
+            var Client_Answer_Packet = new PacketAnswerVote(header, voteGuid, result);
+            if (Client_Answer_Packet.GetResponse() == VoteResponse.SAT)
             {
                 Console.WriteLine("Satisfied");
             }
-            else if (Client_Answer_Packet.GetResponse() == 0)
+            else if (Client_Answer_Packet.GetResponse() == VoteResponse.UNSAT)
             {
                 Console.WriteLine("Unsatisfied");
             }
@@ -303,7 +303,7 @@ namespace _33D03.Client
             logger.Info("Client respond with " + Client_Answer_Packet.GetResponse() + "vote ID: " + voteGuid);
         }
 
-        public static ushort EvalChecker(string question)
+        public static VoteResponse EvalChecker(string question)
         {
             try
             {
@@ -341,15 +341,15 @@ namespace _33D03.Client
                 };
 
 
-                return (ushort)(comparisonResult ? 1 : 0);
+                return (comparisonResult ? VoteResponse.SAT : VoteResponse.UNSAT);
             }
             catch
             {
-                throw new ArgumentException("something went wrong");
+                return VoteResponse.UNKNOWN;
             }
         }
 
-        public static ushort SMTChecker(string question)
+        public static VoteResponse SMTChecker(string question)
         {
             using Context z3Ctx = new Context();
             var model = z3Ctx.ParseSMTLIB2String(question);
@@ -358,13 +358,13 @@ namespace _33D03.Client
 
             if (solver.Check() == Status.SATISFIABLE)
             {
-                return 1;
+                return VoteResponse.SAT;
             }
             else if (solver.Check() == Status.UNSATISFIABLE)
             {
-                return 0;
+                return VoteResponse.UNSAT;
             }
-            else return 2;
+            else return VoteResponse.UNKNOWN;
         }
     }
 }
