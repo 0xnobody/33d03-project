@@ -10,9 +10,9 @@ namespace _33D03.Shared.Pip
     [StructLayout(LayoutKind.Sequential, Pack = 1, Size = 36)]
     public struct PacketAnswerVote
     {
-        Header header;
-        Guid voteId;
-        ushort response;
+        public Header header;
+        public Guid voteId;
+        public ushort response;
 
         public PacketAnswerVote(Header constructheader, Guid constructvoteGuid, ushort constructResponse)       //constructor
         {

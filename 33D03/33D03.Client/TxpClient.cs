@@ -9,6 +9,7 @@ using _33D03.Shared;
 using System.Runtime.InteropServices;
 using Microsoft.VisualBasic;
 using Microsoft.Z3;
+using Newtonsoft.Json.Converters;
 
 namespace _33D03.Client
 {
@@ -113,6 +114,8 @@ namespace _33D03.Client
         /// <param name="data"></param>
         public void Send(byte[] data)
         {
+            logger.Trace($"Sending packet {BitConverter.ToString(data).Replace("-", "")}");
+
             segmentHandler.SendOrQueuePacket(data, serverEndPoint);
         }
 

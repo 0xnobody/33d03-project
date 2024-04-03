@@ -371,6 +371,8 @@ namespace _33D03.Shared.Txp
                 type = Shared.Txp.PacketType.ACK
             };
 
+            header.checksum = header.CalculateChecksum(header.ToBytes());
+
             logger.Info($"Sending ACK for {seqNum}:{pcktNum}");
 
             byte[] ackPacket = header.ToBytes();
@@ -395,6 +397,8 @@ namespace _33D03.Shared.Txp
                 finish = 1,
                 type = Shared.Txp.PacketType.NACK
             };
+
+            header.checksum = header.CalculateChecksum(header.ToBytes());
 
             logger.Info($"Sending NACK for {seqNum}:{pcktNum}");
 

@@ -20,8 +20,8 @@ namespace _33D03.Shared.Pip // Declaring a namespace for organizing related code
     [StructLayout(LayoutKind.Sequential, Pack = 1, Size = 8)] // Applying an attribute to control the physical layout of the data fields in this struct when it is passed to unmanaged code.
     public struct PacketHello // Declaring a public structure named PacketHello.
     {
-        Header header; // Declaring a field of type Header.
-        uint version; // Declaring a field of type uint.
+        public Header header; // Declaring a field of type Header.
+        public uint version; // Declaring a field of type uint.
         public ushort numFeatures;
 
         public PacketHello(Header hdr)

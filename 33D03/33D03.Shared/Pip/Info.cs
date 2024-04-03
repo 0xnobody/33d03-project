@@ -24,7 +24,7 @@ namespace _33D03.Shared.Pip
 
     public struct ClientToServerRequestInfo
     {
-        Header header;
+        public Header header;
 
         public ClientToServerRequestInfo(Header hdr)
         {

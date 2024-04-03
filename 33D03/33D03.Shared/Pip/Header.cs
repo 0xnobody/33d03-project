@@ -10,7 +10,7 @@ namespace _33D03.Shared.Pip // Declaring a namespace for organizing related code
     public enum PacketType : ushort // Declaring a public enumeration named PacketType, with underlying type ushort.
     {
         Hello_C2S = 0x0000, // Defining an enumeration member named Hello_C2S with value 0x0000.
-        Hello_S2C = 0x0001, // Defining an enumeration member named Hello_S2C with value 0x0001.
+        Hello_S2C = 0x0001, // Definin  g an enumeration member named Hello_S2C with value 0x0001.
         Vote_Request_Simple_C2S = 0x0002,
         Vote_Broadcast_Simple_S2C = 0x0003,
         Vote_answer_Simple_C2S = 0x0004,
@@ -26,14 +26,14 @@ namespace _33D03.Shared.Pip // Declaring a namespace for organizing related code
     [StructLayout(LayoutKind.Sequential, Pack = 1, Size = 2)] // Applying an attribute to control the physical layout of the data fields in this struct when it is passed to unmanaged code.
     public struct Header // Declaring a public structure named Header.
     {
-        public uint magic; // Declaring a field of type uint.
-        public uint checksum; // Declaring a field of type uint.
+        //public uint magic; // Declaring a field of type uint.
+        //public uint checksum; // Declaring a field of type uint.
         public PacketType type; // Declaring a field of type PacketType.
 
         public Header(PacketType pcktType) // Defining a constructor for the struct.
         {
-            magic = Constants.MAGIC; // Assigning a constant value to the field magic.
-            checksum = 0; // Assigning the value 0 to the field checksum.
+            //magic = Constants.MAGIC; // Assigning a constant value to the field magic.
+            //checksum = 0; // Assigning the value 0 to the field checksum.
             type = pcktType; // Assigning the value of the parameter pcktType to the field type.
         }
 

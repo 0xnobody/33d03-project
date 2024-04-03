@@ -59,9 +59,11 @@ namespace _33D03.Shared
 
             foreach (var field in type.GetFields())
             {
-                if (field.FieldType.IsPrimitive)
+                if (field.FieldType.IsPrimitive || field.FieldType == typeof(Shared.Pip.Header) || field.FieldType.IsEnum)
                 {
                     var fieldType = field.FieldType;
+                    fieldType = fieldType.IsEnum ? Enum.GetUnderlyingType(fieldType) : fieldType;
+
                     int sizeOfField = Marshal.SizeOf(fieldType);
                     int offset = Marshal.OffsetOf(type, field.Name).ToInt32();
 
@@ -69,7 +71,8 @@ namespace _33D03.Shared
                     if (fieldType == typeof(int) || fieldType == typeof(uint) ||
                         fieldType == typeof(short) || fieldType == typeof(ushort) ||
                         fieldType == typeof(long) || fieldType == typeof(ulong) ||
-                        fieldType == typeof(float) || fieldType == typeof(double))
+                        fieldType == typeof(float) || fieldType == typeof(double) ||
+                        fieldType == typeof(Shared.Pip.Header))
                     {
                         Array.Reverse(data, offset, sizeOfField);
                     }
