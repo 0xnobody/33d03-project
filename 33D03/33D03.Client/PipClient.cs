@@ -331,15 +331,15 @@ namespace _33D03.Client
                 // Perform the comparison
                 bool comparisonResult = operatorFound switch
                 {
-                    "<" => leftResult < rightResult,
-                    ">" => leftResult > rightResult,
-                    "<=" => leftResult <= rightResult,
-                    ">=" => leftResult >= rightResult,
+                    "<" => (int)leftResult < (int)rightResult,
+                    ">" => (int)leftResult > (int)rightResult,
+                    "<=" => (int)leftResult <= (int)rightResult,
+                    ">=" => (int)leftResult >= (int)rightResult,
                     "==" => (int)leftResult == (int)rightResult,
                     "=" => (int)leftResult == (int)rightResult,
                     _ => throw new ArgumentException("no comparator found")
                 };
-                
+
 
                 return (ushort)(comparisonResult ? 1 : 0);
             }

@@ -61,7 +61,7 @@ namespace _33D03.Client
             Console.WriteLine("1 for smt eval feature");
             Console.WriteLine("2 for ocr eval feature");
             Feature[] features = new Feature[3];
-            int count = 1;
+            int count = 0;
             while (input != "" && input != null)
             {
                 input = Console.ReadLine();
@@ -70,32 +70,53 @@ namespace _33D03.Client
                 {
                     bool hassmt = false;
                     for (int i = 0; i < count; i++)
-                    {   
-                        
+                    {
+
                         if (features[i] == Feature.SMTVerificationFeature)
                         {
                             hassmt = true;
                             break;
                         }
                     }
-                    if (hassmt == false){
+                    if (hassmt == false)
+                    {
                         features[count] = Feature.SMTVerificationFeature;
+                        count++;
+                    };
+                }
+                else if (input == "0")
+                {
+                    bool hassmt = false;
+                    for (int i = 0; i < count; i++)
+                    {
+
+                        if (features[i] == Feature.SimpleVerificationFeature)
+                        {
+                            hassmt = true;
+                            break;
+                        }
+                    }
+                    if (hassmt == false)
+                    {
+                        features[count] = Feature.SimpleVerificationFeature;
                         count++;
                     };
                 }
 
                 else if (input == "2")
-                {   bool hasocr = false;
+                {
+                    bool hasocr = false;
                     for (int i = 0; i < count; i++)
-                    {   
-                        
+                    {
+
                         if (features[i] == Feature.OCRFeature)
                         {
                             hasocr = true;
                             break;
                         }
                     }
-                    if (hasocr == false){
+                    if (hasocr == false)
+                    {
                         features[count] = Feature.OCRFeature;
                         count++;
                     };
@@ -122,14 +143,14 @@ namespace _33D03.Client
                 Feature[] features = SelectInput();
                 bool HasSmtVerification = false;
                 for (int i = 0; i < 3; i++)
-                    {   
-                        
-                        if (features[i] == Feature.SMTVerificationFeature)
-                        {
-                            HasSmtVerification = true;
-                            break;
-                        }
+                {
+
+                    if (features[i] == Feature.SMTVerificationFeature)
+                    {
+                        HasSmtVerification = true;
+                        break;
                     }
+                }
 
                 TxpClient client = new TxpClient("127.0.0.1", 24588);
                 string filePath = @$"C:\PipList\client{Guid.NewGuid()}_output.txt";
@@ -249,9 +270,10 @@ namespace _33D03.Client
             switch (pipHeader.type)
             {
                 case PacketType.Vote_Broadcast_Vote_S2C:
-                    if (ClientSmtCapabilities == true){
-                    OnVoteBroadCastVoteS2C(client, filePath, data);
-                    } 
+                    if (ClientSmtCapabilities == true)
+                    {
+                        OnVoteBroadCastVoteS2C(client, filePath, data);
+                    }
                     else Console.WriteLine("cannot solve for smt question type");
                     break;
 

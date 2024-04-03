@@ -1,0 +1,1 @@
+03/04/2024 11:48:23  (set-logic QF_LIA) (declare-const x Int) (declare-const y Int) (assert (= (- x y) (+ x (- y) 1))) (check-sat) 
