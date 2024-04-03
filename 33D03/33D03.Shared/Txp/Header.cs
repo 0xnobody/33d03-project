@@ -42,6 +42,9 @@ namespace _33D03.Shared.Txp
         /// This is just a hint. Does not need to be acknowledged.
         /// </summary>
         RESET = 5,
+
+        PING_REQ = 0xFFFE,
+        PING_RES = 0xFFFF
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1, Size = 24)]
