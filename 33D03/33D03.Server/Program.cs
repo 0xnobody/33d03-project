@@ -36,10 +36,6 @@ namespace _33D03.Server
                 List<ServerListofClients> ServerclientsList = new List<ServerListofClients>();
                 List<ServerVoteId> ServerActiveQuestionList = new List<ServerVoteId>();
 
-                Feature[] ServerFeatures = { Feature.SMTVerificationFeature, Feature.SimpleVerificationFeature, Feature.OCRFeature };
-                // ServerclientsList.Add(new ServerListofClients(0, 3, ServerFeatures));
-                // Subscribe to the OnPacketReceived event with an anonymous method to handle incoming packets.
-
                 string filePath = @"C:\PipList\server_output.txt";
 
                 txpServer.OnPacketReceived += (clientState, data) =>
@@ -92,11 +88,11 @@ namespace _33D03.Server
             }
             else if (receivedHeader.type == PacketType.Vote_Answer_Vote_C2S)
             {
-                PipServer.handlingvoteresults(txpServer, ref ServerActiveQuestionList, data, filePath);
+                PipServer.handlingvoteresults(txpServer, ref ServerActiveQuestionList, ServerclientsList, data, filePath);
             }
             else if (receivedHeader.type == PacketType.Vote_answer_Simple_C2S)
             {
-                PipServer.handlingvoteresults(txpServer, ref ServerActiveQuestionList, data, filePath);
+                PipServer.handlingvoteresults(txpServer, ref ServerActiveQuestionList, ServerclientsList,data, filePath);
             }
         }
     }
