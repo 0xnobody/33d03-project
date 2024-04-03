@@ -156,6 +156,8 @@ namespace _33D03.Client
                 string filePath = @$"C:\PipList\client{Guid.NewGuid()}_output.txt";
                 client.OnPacketReceived += (data) =>
                 {
+                    logger.Trace($"client received data {BitConverter.ToString(data).Replace("-", "")}");
+
                     OnPacketRecievedHandler(client, data, HasSmtVerification);
                 };
 

@@ -85,6 +85,8 @@ namespace _33D03.Shared.Txp
                 type = Shared.Txp.PacketType.SYN
             };
 
+            header.checksum = header.CalculateChecksum(header.ToBytes());
+
             logger.Info($"Sending SYN with CID {convId}");
 
             byte[] ackPacket = header.ToBytes();
@@ -109,6 +111,8 @@ namespace _33D03.Shared.Txp
                 finish = 0,
                 type = Shared.Txp.PacketType.SYN_ACK
             };
+
+            header.checksum = header.CalculateChecksum(header.ToBytes());
 
             logger.Info($"Sending SYN ACK with CID {convId}");
 
