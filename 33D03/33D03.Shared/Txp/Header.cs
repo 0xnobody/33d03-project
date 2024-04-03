@@ -35,13 +35,16 @@ namespace _33D03.Shared.Txp
         /// <summary>
         /// Response to a synchronization request - The client must respond with a SYN-ACK
         /// </summary>
-        SYN_ACK = 5,
+        SYN_ACK = 4,
 
         /// <summary>
         /// Packet contains a reset request - The provided conversation ID is purged.
         /// This is just a hint. Does not need to be acknowledged.
         /// </summary>
-        RESET = 6,
+        RESET = 5,
+
+        PING_REQ = 0xFFFE,
+        PING_RES = 0xFFFF
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1, Size = 24)]

@@ -65,11 +65,6 @@ namespace _33D03.Client
                 serverEndPoint = new IPEndPoint(addresses[0], serverPort);
             }
 
-            // Generate a random conversation ID.
-            conversationId = (uint)new Random(DateTime.Now.Millisecond).Next(); // Better randomness needed.
-
-            logger.Trace($"Assigned CID {conversationId:X}");
-
             // Initialize the packet bufferer for handling packet fragments.
             segmentHandler = new Shared.Txp.SegmentHandler(client, conversationId);
 
@@ -116,8 +111,6 @@ namespace _33D03.Client
             segmentHandler.SendOrQueuePacket(data, serverEndPoint);
         }
 
-        
-
         private void ListenForData()
         {
             IPEndPoint remoteEndPoint = new IPEndPoint(IPAddress.Loopback, 0000);
@@ -133,6 +126,11 @@ namespace _33D03.Client
 
             var header = pckt.Item1;
             var receivedData = pckt.Item2;
+
+            if (header.convId != conversationId)
+            {
+                logger.Warn($"Received wrong conversation ID {conversationId}");
+            }
 
             switch (header.type)
             {
@@ -167,6 +165,25 @@ namespace _33D03.Client
                     logger.Warn("Received unknown packet type");
                     break;
             }
+        }
+
+        private void RequestCID()
+        {
+            Shared.Txp.Header header = new Shared.Txp.Header
+            {
+                magic = Shared.Txp.Constants.MAGIC,
+                checksum = 0,
+                convId = 0,
+                seqNum = 0,
+                pcktNum = 0,
+                finish = 1,
+                type = Shared.Txp.PacketType.PING_REQ
+            };
+
+            logger.Info($"Requesting CID");
+
+            byte[] ackPacket = header.ToBytes();
+            client.Send(ackPacket, ackPacket.Length, serverEndPoint);
         }
     }
 }
