@@ -204,6 +204,25 @@ namespace _33D03.Client
             Console.WriteLine();
         }
 
+        public static void VoteSimpleTyped(TxpClient client)
+        {
+            Console.Write("Enter String:");
+            string question = UI.VoteManUI();
+            var questionlength = (uint)question.Length;
+            var header = new Header(PacketType.Vote_Request_Simple_C2S);
+            Guid voteGuid = Guid.NewGuid();
+            var Vote_init_packet = new PacketRequestVote(header, voteGuid, questionlength);
+            var voteinitbytes = Vote_init_packet.Serialize(question);
+            client.Send(voteinitbytes);
+            Console.WriteLine();
+            Console.WriteLine();
+            Console.WriteLine();
+            logger.Info("Client initiate vote requst with SMTLIB question" + question);
+            Console.WriteLine();
+            Console.WriteLine();
+            Console.WriteLine();
+        }
+
 
         //called for each VOTEINIT by client, sends randomly generated question
         public static void Client_request_info(TxpClient client)
@@ -344,9 +363,11 @@ namespace _33D03.Client
 
                 return (ushort)(comparisonResult ? 1 : 0);
             }
-            catch
+            catch (Exception)
             {
-                throw new ArgumentException("something went wrong");
+                // Handle the error without stopping the program
+                Console.WriteLine("Invalid syntax. Continuing program...");
+                return 2;
             }
         }
 
@@ -366,6 +387,183 @@ namespace _33D03.Client
                 return 0;
             }
             else return 2;
+        }
+
+    }
+
+    public class UI
+    {
+        internal static void PrintLOGO()
+        {
+            Console.WriteLine("                    ||                                                                       ||");
+            Console.WriteLine("                    ||                    ,--.                    ,--.  ,--,------,--------. ||");
+            Console.WriteLine("                    ||    ,--.  ,--,---.,-'  '-.,---.             |  ,'.|  |  .---'--.  .--' ||");
+            Console.WriteLine("                    ||     \\  `'  | .-. '-.  .-| .-. :            |  |' '  |  `--,   |  |    ||");
+            Console.WriteLine("                    ||      \\    /' '-' ' |  | \\   --.    .--.    |  | `   |  `---.  |  |    ||");
+            Console.WriteLine("                    ||       `--'  `---'  `--'  `----'    '--'    `--'  `--`------'  `--'    ||");
+            Console.WriteLine("                    ||                                                                       ||");
+        }
+
+        public static void StartupUIClient()
+        {
+            Console.Clear();
+            Console.WriteLine("                    ---------------------------------------------------------------------------");
+            PrintLOGO();
+            Console.WriteLine("                    ||=======================================================================||");
+            Console.WriteLine("                    ||=                                 33D03                               =||");
+            Console.WriteLine("                    ||=                                Group 1                              =||");
+            Console.WriteLine("                    ||=                       Press Enter to Continue                       =||");
+            Console.WriteLine("                    ||=======================================================================||");
+            Console.WriteLine("                    ---------------------------------------------------------------------------");
+            Console.ReadLine();
+        }
+
+
+
+        public static void FeatureSelectUI()
+        {
+            Console.Clear();
+            Console.WriteLine("                    ---------------------------------------------------------------------------");
+            PrintLOGO();
+            Console.WriteLine("                    ||=======================================================================||");
+            Console.WriteLine("                    ||=                        0 - Simple Verification                      =||");
+            Console.WriteLine("                    ||=                         1 - SMT Verification                        =||");
+            Console.WriteLine("                    ||=                           2 - OCR Enabled                           =||");
+            Console.WriteLine("                    ||=                                                                     =||");
+            Console.WriteLine("                    ||=======================================================================||");
+            Console.WriteLine("                    ---------------------------------------------------------------------------");
+        }
+
+        public static void FeatureSelectInvalidUI()
+        {
+            Console.Clear();
+            Console.WriteLine("                    ---------------------------------------------------------------------------");
+            PrintLOGO();
+            Console.WriteLine("                    ||=======================================================================||");
+            Console.WriteLine("                    ||=                   Invalid Input, Please check again                 =||");
+            Console.WriteLine("                    ||=                        0 - Simple Verification                      =||");
+            Console.WriteLine("                    ||=                         1 - SMT Verification                        =||");
+            Console.WriteLine("                    ||=                           2 - OCR Enabled                           =||");
+            Console.WriteLine("                    ||=======================================================================||");
+            Console.WriteLine("                    ---------------------------------------------------------------------------");
+        }
+
+        public static void AddedFeature()
+        {
+            Console.Clear();
+            Console.WriteLine("                    ---------------------------------------------------------------------------");
+            PrintLOGO();
+            Console.WriteLine("                    ||=======================================================================||");
+            Console.WriteLine("                    ||=                             Added Feature                           =||");
+            Console.WriteLine("                    ||=                        0 - Simple Verification                      =||");
+            Console.WriteLine("                    ||=                         1 - SMT Verification                        =||");
+            Console.WriteLine("                    ||=                           2 - OCR Enabled                           =||");
+            Console.WriteLine("                    ||=======================================================================||");
+            Console.WriteLine("                    ---------------------------------------------------------------------------");
+        }
+
+
+
+        public static void ServerConnected()
+        {
+            Console.Clear();
+            Console.WriteLine("                    ---------------------------------------------------------------------------");
+            PrintLOGO();
+            Console.WriteLine("                    ||=======================================================================||");
+            Console.WriteLine("                    ||=                            ServerConnected                          =||");
+            Console.WriteLine("                    ||=======================================================================||");
+            Console.WriteLine("                    ---------------------------------------------------------------------------");
+        }
+
+        public static void InvalidInput()
+        {
+            Console.Clear();
+            Console.WriteLine("                      ___ _   ___     ___    _     ___ ____    ___ _   _ ____  _   _ _____");
+            Console.WriteLine("                     |_ _| \\ | \\ \\   / / \\  | |   |_ _|  _ \\  |_ _| \\ | |  _ \\| | | |_   _|");
+            Console.WriteLine("                      | ||  \\| |\\ \\ / / _ \\ | |    | || | | |  | ||  \\| | |_) | | | | | |  ");
+            Console.WriteLine("                      | || |\\  | \\ V / ___ \\| |___ | || |_| |  | || |\\  |  __/| |_| | | |  ");
+            Console.WriteLine("                     |___|_| \\_|  \\_/_/   \\_|_____|___|____/  |___|_| \\_|_|    \\___/  |_|  ");
+            Console.WriteLine("                                                                                            ");
+            Console.WriteLine("                    ||=======================================================================||");
+            Console.WriteLine("                    ||=                             Invalid Input                           =||");
+            Console.WriteLine("                    ||=                        Press Enter to Continue                      =||");
+            Console.WriteLine("                    ||=======================================================================||");
+            Console.WriteLine("                    ---------------------------------------------------------------------------");
+            Console.ReadLine();
+        }
+
+        public static void SelectFunction()
+        {
+            Console.Clear();
+            Console.WriteLine("                    ---------------------------------------------------------------------------");
+            PrintLOGO();
+            Console.WriteLine("                    ||=======================================================================||");
+            Console.WriteLine("                    ||=                        vote - Random SMT Vote                       =||");
+            Console.WriteLine("                    ||=                     votesimple - Random Eval Vote                   =||");
+            Console.WriteLine("                    ||=                          Info - get info list                       =||");
+            Console.WriteLine("                    ||=                    Flood - Simulate Spam messaging                  =||");
+            Console.WriteLine("                    ||=======================================================================||");
+            Console.WriteLine("                    ---------------------------------------------------------------------------");
+        }
+
+        public static void PrintFeatureListUI(List<ServerListofClients> clients)
+        {
+            SelectFunction();
+            Console.WriteLine("-------------------------------------------------------------------------------------------------------------------");
+            Console.WriteLine("||=                                                Feature List                                                 =||");
+            foreach (var client in clients)
+            {
+                Console.WriteLine("||---------------------------------------------------------------------------------------------------------------||");
+                Console.WriteLine($"||={client.convoid,-10} {client.numFeatures,-5} {client.features[0],-30} {client.features[1],-30} {client.features[2],-30}=||");
+                Console.WriteLine("||---------------------------------------------------------------------------------------------------------------||");
+            }
+            Console.WriteLine("-------------------------------------------------------------------------------------------------------------------");
+        }
+
+        public static string VoteManUI()
+        {
+            Console.Clear();
+            Console.WriteLine("                    ---------------------------------------------------------------------------");
+            PrintLOGO();
+            Console.WriteLine("                    ||=======================================================================||");
+            Console.WriteLine("                    ||=Enter Question:                                                      =||");
+            Console.WriteLine("                    ||=======================================================================||");
+            Console.WriteLine("                    ---------------------------------------------------------------------------");
+            MoveCursorUpAndRight(3, 40);
+            string question = Console.ReadLine();
+            return question;
+        }
+
+
+
+
+
+
+
+
+        internal static void MoveCursorUpAndRight(int up, int right)
+        {
+            try
+            {
+                // Get current cursor position
+                int currentLeft = Console.CursorLeft;
+                int currentTop = Console.CursorTop;
+
+                // Calculate new cursor position
+                int newLeft = currentLeft + right;
+                int newTop = currentTop - up;
+
+                // Ensure the new position is within the console buffer
+                newLeft = Math.Max(0, Math.Min(Console.BufferWidth - 1, newLeft));
+                newTop = Math.Max(0, Math.Min(Console.BufferHeight - 1, newTop));
+
+                // Set new cursor position
+                Console.SetCursorPosition(newLeft, newTop);
+            }
+            catch (ArgumentOutOfRangeException e)
+            {
+                Console.WriteLine($"Error moving cursor: {e.Message}");
+            }
         }
     }
 }

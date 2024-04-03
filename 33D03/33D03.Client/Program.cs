@@ -23,6 +23,7 @@ namespace _33D03.Client
             string input = null;
             while (input != "exit")
             {
+                UI.SelectFunction();
                 input = Console.ReadLine();
                 if (input == "vote")
                 {
@@ -32,9 +33,9 @@ namespace _33D03.Client
                 {
                     PipClient.Client_request_info(client);
                 }
-                else if (input == "help")
+                else if (input == "voteman")
                 {
-                    helpPrint();
+                    PipClient.VoteSimpleTyped(client);
                 }
                 else if (input == "votesimple")
                 {
@@ -53,8 +54,7 @@ namespace _33D03.Client
                 }
                 else
                 {
-                    Console.Clear();
-                    Console.WriteLine("INVALID INPUT");
+                    UI.InvalidInput();
                 }
             }
         }
@@ -62,9 +62,7 @@ namespace _33D03.Client
         public static Feature[] SelectInput()
         {
             string input = "something string";
-            Console.WriteLine("Feature selection");
-            Console.WriteLine("1 for smt eval feature");
-            Console.WriteLine("2 for ocr eval feature");
+            UI.FeatureSelectUI();
             Feature[] features = new Feature[3];
             int count = 0;
             while (input != "" && input != null)
@@ -80,12 +78,14 @@ namespace _33D03.Client
                         if (features[i] == Feature.SMTVerificationFeature)
                         {
                             hassmt = true;
+                            UI.FeatureSelectInvalidUI();
                             break;
                         }
                     }
                     if (hassmt == false)
                     {
                         features[count] = Feature.SMTVerificationFeature;
+                        UI.AddedFeature();
                         count++;
                     };
                 }
@@ -98,12 +98,14 @@ namespace _33D03.Client
                         if (features[i] == Feature.SimpleVerificationFeature)
                         {
                             hassmt = true;
+                            UI.FeatureSelectInvalidUI();
                             break;
                         }
                     }
                     if (hassmt == false)
                     {
                         features[count] = Feature.SimpleVerificationFeature;
+                        UI.AddedFeature();
                         count++;
                     };
                 }
@@ -117,15 +119,18 @@ namespace _33D03.Client
                         if (features[i] == Feature.OCRFeature)
                         {
                             hasocr = true;
+                            UI.FeatureSelectInvalidUI();
                             break;
                         }
                     }
                     if (hasocr == false)
                     {
                         features[count] = Feature.OCRFeature;
+                        UI.AddedFeature();
                         count++;
                     };
                 }
+                else UI.FeatureSelectInvalidUI();
             }
 
             return features;
@@ -139,11 +144,10 @@ namespace _33D03.Client
                 // Setup logging
                 NLog.LogManager.Setup().LoadConfiguration(builder =>
                 {
-                    builder.ForLogger().FilterMinLevel(LogLevel.Trace).WriteToColoredConsole();
+                    //builder.ForLogger().FilterMinLevel(LogLevel.Trace).WriteToColoredConsole();
                 });
 
-                string test = PipClient.GenerateEvalString();
-                Console.WriteLine(test);
+                UI.StartupUIClient();
 
                 Feature[] features = SelectInput();
                 bool HasSmtVerification = false;
@@ -291,7 +295,7 @@ namespace _33D03.Client
 
 
                 case PacketType.Hello_S2C:
-                    Console.WriteLine("server waved hello!");
+                    UI.ServerConnected();
                     break;
                 case PacketType.Client_Info:
                     (Header hdr, List<ServerListofClients> infolist) = PacketInfo.DeserializeListOfServerListofClients(data);
@@ -303,6 +307,8 @@ namespace _33D03.Client
                         }
                         else { Console.WriteLine($"Recieved, SERVER BROADCASST, Server has numfeatures: {ServerListofClients.numFeatures}, Features:{String.Join(", ", ServerListofClients.features)}"); }
                     }
+                    Thread.Sleep(1);
+                    UI.PrintFeatureListUI(infolist);
                     break;
 
             }

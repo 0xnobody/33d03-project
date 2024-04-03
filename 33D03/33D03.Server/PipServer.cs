@@ -316,4 +316,39 @@ namespace _33D03.Server
         }
 
     }
+
+
+    public class UI
+    {
+
+        public static void StartupUIServer()
+        {
+            Console.Clear();
+            Console.WriteLine("---------------------------------------------------------------------------");
+            Console.WriteLine("||                                                                       ||");
+            Console.WriteLine("||                    ,--.                    ,--.  ,--,------,--------. ||");
+            Console.WriteLine("||    ,--.  ,--,---.,-'  '-.,---.             |  ,'.|  |  .---'--.  .--' ||");
+            Console.WriteLine("||     \\  `'  | .-. '-.  .-| .-. :            |  |' '  |  `--,   |  |    ||");
+            Console.WriteLine("||      \\    /' '-' ' |  | \\   --.    .--.    |  | `   |  `---.  |  |    ||");
+            Console.WriteLine("||       `--'  `---'  `--'  `----'    '--'    `--'  `--`------'  `--'    ||");
+            Console.WriteLine("||                                                                       ||");
+
+            Console.WriteLine("||=======================================================================||");
+            Console.WriteLine("||=                                 33D03                               =||");
+            Console.WriteLine("||=                                Group 1                              =||");
+            Console.WriteLine("||=                    Server Initiated Successfully                    =||");
+            Console.WriteLine("||=======================================================================||");
+            Console.WriteLine("---------------------------------------------------------------------------");
+            Console.ReadLine();
+        }
+
+        public static void PrintClientList()
+        {
+
+        }
+
+
+    }
+
+
 }

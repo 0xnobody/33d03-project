@@ -31,7 +31,7 @@ namespace _33D03.Server
                 NLog.LogManager.Setup().LoadConfiguration(builder =>
                 {
                     // Configures logger to filter logs at Trace level and above and outputs them to a colored console.
-                    builder.ForLogger().FilterMinLevel(LogLevel.Trace).WriteToColoredConsole();
+                    //builder.ForLogger().FilterMinLevel(LogLevel.Trace).WriteToColoredConsole();
                 });
 
                 // Initialize a new TxpServer instance listening on port 1151.
@@ -73,6 +73,7 @@ namespace _33D03.Server
 
 
                 txpServer.Start();
+                UI.StartupUIServer();
 
                 // Logs an Info level message indicating the server has started.
                 logger.Info("Server started...");
