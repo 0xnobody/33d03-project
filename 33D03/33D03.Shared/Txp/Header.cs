@@ -92,7 +92,7 @@ namespace _33D03.Shared.Txp
             // Set calculatedChecksum at offset 4 of the byte array, which corresponds to the checksum field in the struct
             // This saves us from copying the entire struct back into the byte array
             int checksumOffset = (int)Marshal.OffsetOf<Header>("checksum");
-            Buffer.BlockCopy(BitConverter.GetBytes(calculatedChecksum), 0, completedPacketBytes, checksumOffset, sizeof(uint));
+            Buffer.BlockCopy(Serialization.GetBytes(calculatedChecksum), 0, completedPacketBytes, checksumOffset, sizeof(uint));
 
             return completedPacketBytes;
         }
@@ -104,9 +104,6 @@ namespace _33D03.Shared.Txp
         /// <returns>True if valid, false otherwise</returns>
         public bool IsValid(byte[] rawFullPacketBytes)
         {
-            // We must copy the bytes to a new array, as the checksum field is set to 0 in the struct
-            // TODO: Perhaps we can avoid copying by specifying in the checksum calculation to ignore the checksum field
-
             if (magic != Constants.MAGIC)
             {
                 return false;
@@ -146,9 +143,11 @@ namespace _33D03.Shared.Txp
             var hashData = new byte[rawFullPacketBytes.Length - hashBeginIndex];
             Buffer.BlockCopy(rawFullPacketBytes, hashBeginIndex, hashData, 0, hashData.Length);
 
-            logger.Trace($"Calculating checksum for bytes: {BitConverter.ToString(hashData)}");
+            var csum = Crc32.HashToUInt32(hashData);
 
-            return Crc32.HashToUInt32(hashData);
+            logger.Trace($"Calculated checksum {csum:X} for bytes: {BitConverter.ToString(hashData)}");
+
+            return csum;
         }
     }
 }

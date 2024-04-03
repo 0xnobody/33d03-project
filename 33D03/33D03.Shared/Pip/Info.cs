@@ -62,21 +62,21 @@ namespace _33D03.Shared.Pip
         {
             List<byte> bytesList = new List<byte>();
             // Serialize Header
-            //bytesList.AddRange(BitConverter.GetBytes(header.magic));
-            //bytesList.AddRange(BitConverter.GetBytes(header.checksum));
-            bytesList.AddRange(BitConverter.GetBytes((uint)header.type));
-            bytesList.AddRange(BitConverter.GetBytes((uint)clients.Count));
+            // bytesList.AddRange(Serialization.GetBytes(header.magic));
+            // bytesList.AddRange(Serialization.GetBytes(header.checksum));
+            bytesList.AddRange(Serialization.GetBytes((uint)header.type));
+            bytesList.AddRange(Serialization.GetBytes((uint)clients.Count));
             // Serialize each ServerListofClients struct
             foreach (var client in clients)
             {
                 // Serialize ConvoID
-                bytesList.AddRange(BitConverter.GetBytes(client.convoid));
+                bytesList.AddRange(Serialization.GetBytes(client.convoid));
                 // Serialize NumberOfFeatures
-                bytesList.AddRange(BitConverter.GetBytes(client.numFeatures));
+                bytesList.AddRange(Serialization.GetBytes(client.numFeatures));
                 // Serialize TailData (Features array)
                 foreach (var feature in client.features)
                 {
-                    bytesList.AddRange(BitConverter.GetBytes((short)feature));
+                    bytesList.AddRange(Serialization.GetBytes((short)feature));
                 }
             }
             return bytesList.ToArray();
@@ -87,29 +87,29 @@ namespace _33D03.Shared.Pip
             int currentIndex = 0;
             Header header = new Header
             {
-                //magic = BitConverter.ToUInt32(data, currentIndex),
-                //checksum = BitConverter.ToUInt32(data, currentIndex += sizeof(uint)),
-                type = (PacketType)BitConverter.ToUInt32(data, currentIndex += sizeof(uint))
+                // magic = Serialization.ToUInt32(data, currentIndex),
+                // checksum = Serialization.ToUInt32(data, currentIndex += sizeof(uint)),
+                type = (PacketType)Serialization.ToUInt32(data, currentIndex += sizeof(uint))
             };
             currentIndex += sizeof(uint);
 
-            uint clientsCount = BitConverter.ToUInt32(data, currentIndex);
+            uint clientsCount = Serialization.ToUInt32(data, currentIndex);
             currentIndex += sizeof(uint);
 
             List<ServerListofClients> clients = new List<ServerListofClients>();
 
             for (int i = 0; i < clientsCount; i++)
             {
-                uint convoid = BitConverter.ToUInt32(data, currentIndex);
+                uint convoid = Serialization.ToUInt32(data, currentIndex);
                 currentIndex += sizeof(uint);
 
-                int numFeatures = BitConverter.ToInt32(data, currentIndex);
+                int numFeatures = Serialization.ToInt32(data, currentIndex);
                 currentIndex += sizeof(int);
 
                 Feature[] features = new Feature[numFeatures];
                 for (int j = 0; j < numFeatures; j++)
                 {
-                    features[j] = (Feature)BitConverter.ToInt16(data, currentIndex);
+                    features[j] = (Feature)Serialization.ToUInt16(data, currentIndex);
                     currentIndex += sizeof(short);
                 }
 

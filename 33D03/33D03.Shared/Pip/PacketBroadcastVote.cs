@@ -86,27 +86,10 @@ namespace _33D03.Shared.Pip // Declaring a namespace for organizing related code
 
         public static (PacketBroadcastVote, string) Deserialize(byte[] data)
         {
-            // Extract the PacketRequestVote structure
-            int sizeOfPacketBroadcastVote = Marshal.SizeOf(typeof(PacketBroadcastVote));
-            IntPtr ptr = Marshal.AllocHGlobal(sizeOfPacketBroadcastVote);
-            try
-            {
-                Marshal.Copy(data, 0, ptr, sizeOfPacketBroadcastVote);
-                PacketBroadcastVote packetBroadcastVote = (PacketBroadcastVote)Marshal.PtrToStructure(ptr, typeof(PacketBroadcastVote));
+            var structData = Serialization.ByteArrayToStructure<PacketBroadcastVote>(data);
+            string question = Encoding.UTF8.GetString(data, Marshal.SizeOf<PacketBroadcastVote>(), (int)structData.questionLength);
 
-                // Calculate the start index and length of the question string
-                int questionStartIndex = sizeOfPacketBroadcastVote;
-                int questionLength = data.Length - questionStartIndex; // Assuming the rest of the array is the question
-
-                // Extract the question string
-                string question = Encoding.UTF8.GetString(data, questionStartIndex, questionLength);
-
-                return (packetBroadcastVote, question);
-            }
-            finally
-            {
-                Marshal.FreeHGlobal(ptr);
-            }
+            return (structData, question);
         }
 
         public string GetQuestion(byte[] fullPacketData) // Defining a method to extract the vote string from a serialized PacketBroadcastVote.

@@ -56,27 +56,11 @@ namespace _33D03.Shared.Pip // Declaring a namespace for organizing related code
 
         public static (PacketBroadcastVoteResult, string) Deserialize(byte[] data)
         {
-            // Extract the PacketBroadcastVoteResult structure
-            int sizeOfPacketBroadcastVoteResult = Marshal.SizeOf(typeof(PacketBroadcastVoteResult));
-            IntPtr ptr = Marshal.AllocHGlobal(sizeOfPacketBroadcastVoteResult);
-            try
-            {
-                Marshal.Copy(data, 0, ptr, sizeOfPacketBroadcastVoteResult);
-                PacketBroadcastVoteResult packetBroadcastVoteResult = (PacketBroadcastVoteResult)Marshal.PtrToStructure(ptr, typeof(PacketBroadcastVoteResult));
+            var packetBroadcastVoteResult = Serialization.ByteArrayToStructure<PacketBroadcastVoteResult>(data);
+            var packetLength = Marshal.SizeOf(packetBroadcastVoteResult);
+            string resultStats = Encoding.UTF8.GetString(data, packetLength, data.Length - packetLength);
 
-                // Calculate the start index and length of the resultStats string
-                int resultStatsStartIndex = sizeOfPacketBroadcastVoteResult;
-                int resultStatsLength = data.Length - resultStatsStartIndex; // Assuming the rest of the array is the resultStats
-
-                // Extract the resultStats string
-                string resultStats = Encoding.UTF8.GetString(data, resultStatsStartIndex, resultStatsLength);
-
-                return (packetBroadcastVoteResult, resultStats);
-            }
-            finally
-            {
-                Marshal.FreeHGlobal(ptr);
-            }
+            return (packetBroadcastVoteResult, resultStats);
         }
 
         public byte[] Serialize() // Defining a method to serialize the struct into a byte array.

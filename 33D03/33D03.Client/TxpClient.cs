@@ -68,6 +68,8 @@ namespace _33D03.Client
             // Generate a random conversation ID.
             conversationId = (uint)new Random(DateTime.Now.Millisecond).Next(); // Better randomness needed.
 
+            logger.Trace($"Assigned CID {conversationId:X}");
+
             // Initialize the packet bufferer for handling packet fragments.
             segmentHandler = new Shared.Txp.SegmentHandler(client, conversationId);
 

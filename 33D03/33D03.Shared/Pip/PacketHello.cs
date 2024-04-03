@@ -13,7 +13,8 @@ namespace _33D03.Shared.Pip // Declaring a namespace for organizing related code
     {
         SimpleVerificationFeature = 0,
         SMTVerificationFeature = 1, // Defining an enumeration member named SMTVerificationFeature with value 0.
-        OCRFeature = 2
+        OCRFeature = 2,
+        Unavail = 9
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1, Size = 8)] // Applying an attribute to control the physical layout of the data fields in this struct when it is passed to unmanaged code.
@@ -71,7 +72,7 @@ namespace _33D03.Shared.Pip // Declaring a namespace for organizing related code
             int startIndexOfFeatures = Marshal.SizeOf(typeof(PacketHello)); // Adjust if header needs specific handling
             for (int i = 0; i < numFeatures; i++)
             {
-                Buffer.BlockCopy(BitConverter.GetBytes((ushort)features[i]), 0, completedPacketBytes, startIndexOfFeatures + i * 2, 2);
+                Buffer.BlockCopy(Serialization.GetBytes((ushort)features[i]), 0, completedPacketBytes, startIndexOfFeatures + i * 2, 2);
             }
 
             return completedPacketBytes; // Returning the completed byte array.
@@ -80,28 +81,18 @@ namespace _33D03.Shared.Pip // Declaring a namespace for organizing related code
         public static (PacketHello, Feature[]) Deserialize(byte[] data)
         {
             // Extract the PacketHello structure
-            int sizeOfPacketHello = Marshal.SizeOf(typeof(PacketHello));
-            IntPtr ptr = Marshal.AllocHGlobal(sizeOfPacketHello);
-            PacketHello packetHello;
-            try
-            {
-                Marshal.Copy(data, 0, ptr, sizeOfPacketHello);
-                packetHello = (PacketHello)Marshal.PtrToStructure(ptr, typeof(PacketHello));
-            }
-            finally
-            {
-                Marshal.FreeHGlobal(ptr);
-            }
+            var packetHello = Serialization.ByteArrayToStructure<PacketHello>(data);
+
             // Assuming you know how many features there are (e.g., from packetHello or a fixed size)
             // For demonstration, let's say it's a fixed number or extracted from packetHello
             int numFeatures = packetHello.numFeatures;
             Feature[] features = new Feature[numFeatures];
 
-            int featuresStartIndex = sizeOfPacketHello;
+            int featuresStartIndex = Marshal.SizeOf<PacketHello>();
             for (int i = 0; i < numFeatures; i++)
             {
                 int featurePos = featuresStartIndex + (i * sizeof(ushort));
-                features[i] = (Feature)BitConverter.ToUInt16(data, featurePos);
+                features[i] = (Feature)Serialization.ToUInt16(data, featurePos);
             }
             return (packetHello, features);
         }
@@ -112,7 +103,7 @@ namespace _33D03.Shared.Pip // Declaring a namespace for organizing related code
             Feature[] features = new Feature[numFeatures]; // Creating a new features array.
             for (int i = 0; i < numFeatures; i++) // Looping over each feature.
             {
-                features[i] = (Feature)BitConverter.ToUInt16(fullPacketData, Marshal.SizeOf(header) + i * 2); // Converting each feature from a byte array to a Feature enumeration member and storing it in the features array.
+                features[i] = (Feature)Serialization.ToUInt16(fullPacketData, Marshal.SizeOf(header) + i * 2); // Converting each feature from a byte array to a Feature enumeration member and storing it in the features array.
             }
             return features; // Returning the features array.
         }
