@@ -152,7 +152,7 @@ namespace _33D03.Client
                     }
                 }
 
-                TxpClient client = new TxpClient("127.0.0.1", 24588);
+                TxpClient client = new TxpClient("127.0.0.1", 8080);
                 string filePath = @$"C:\PipList\client{Guid.NewGuid()}_output.txt";
                 client.OnPacketReceived += (data) =>
                 {
@@ -265,6 +265,9 @@ namespace _33D03.Client
         private static void OnPacketRecievedHandler(TxpClient client, byte[] data, bool ClientSmtCapabilities)
         {
             var pipHeader = Header.FromBytes(data);
+            Console.WriteLine();
+            Console.WriteLine("Raw bytes data is " + BitConverter.ToString(data));
+            Console.WriteLine();
             string filePath = @$"C:\PipList\client{Guid.NewGuid()}_output.txt";
 
             switch (pipHeader.type)
@@ -290,6 +293,7 @@ namespace _33D03.Client
                     break;
                 case PacketType.Client_Info:
                     (Header hdr, List<ServerListofClients> infolist) = PacketInfo.DeserializeListOfServerListofClients(data);
+                    Console.WriteLine(hdr.type);
                     foreach (var ServerListofClients in infolist)
                     {
                         if (ServerListofClients.convoid != 0)

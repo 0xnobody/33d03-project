@@ -141,7 +141,7 @@ namespace _33D03.Server
                     {
                         if (ServerListofClients.features[i] == Feature.SimpleVerificationFeature && ServerListofClients.convoid != 0)
                         {
-                            {   
+                            {
                                 Console.WriteLine("added simple count");
                                 simplecount++;
                                 break;
@@ -172,6 +172,9 @@ namespace _33D03.Server
             var infopack = new PacketInfo(infohdr, clientsList.Count);
             byte[] sendinfobyte = infopack.SerializeListOfServerListofClients(clientsList);
             Console.WriteLine($"sent client info{infopack.header} {infopack.numClients}");
+            Console.WriteLine();
+            Console.WriteLine("Sending Client Info " + BitConverter.ToString(sendinfobyte));
+            Console.WriteLine();
             server.Send(sendinfobyte, clientState);
         }
 

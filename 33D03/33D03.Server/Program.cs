@@ -35,7 +35,7 @@ namespace _33D03.Server
                 });
 
                 // Initialize a new TxpServer instance listening on port 1151.
-                TxpServer txpServer = new TxpServer(24588);
+                TxpServer txpServer = new TxpServer(8080);
                 List<ServerListofClients> ServerclientsList = new List<ServerListofClients>();
                 List<ServerVoteId> ServerActiveQuestionList = new List<ServerVoteId>();
 
@@ -90,6 +90,9 @@ namespace _33D03.Server
         public static void OnPacketRecievedHandler(byte[] data, TxpServer txpServer, TxpClientConversation clientState, List<ServerListofClients> ServerclientsList, ref List<ServerVoteId> ServerActiveQuestionList, string filePath)
         {
             var receivedHeader = Header.FromBytes(data);
+            Console.WriteLine();
+            Console.WriteLine("Raw bytes data is " + BitConverter.ToString(data));
+            Console.WriteLine();
 
             int connectedclients = txpServer.conversations.Count;
             logger.Trace($"Received packet from CID {clientState.ConversationId} of type {receivedHeader.type}");
@@ -105,16 +108,18 @@ namespace _33D03.Server
             else if (receivedHeader.type == PacketType.Vote_Request_Vote_C2S)
             {
                 PipServer.SendInfo(txpServer, clientState, ServerclientsList, data, clientState.ConversationId);
-                PipServer.PipServerBroadcastQuestion(txpServer, data, ServerActiveQuestionList,ServerclientsList);
+                PipServer.PipServerBroadcastQuestion(txpServer, data, ServerActiveQuestionList, ServerclientsList);
             }
-            else if (receivedHeader.type == PacketType.Vote_Request_Simple_C2S){
-                PipServer.PipServerBroadcastSimpleQuestion(txpServer, data, ServerActiveQuestionList,ServerclientsList);
+            else if (receivedHeader.type == PacketType.Vote_Request_Simple_C2S)
+            {
+                PipServer.PipServerBroadcastSimpleQuestion(txpServer, data, ServerActiveQuestionList, ServerclientsList);
             }
             else if (receivedHeader.type == PacketType.Vote_Answer_Vote_C2S)
             {
                 PipServer.handlingvoteresults(txpServer, ref ServerActiveQuestionList, data, filePath);
             }
-            else if (receivedHeader.type == PacketType.Vote_answer_Simple_C2S){
+            else if (receivedHeader.type == PacketType.Vote_answer_Simple_C2S)
+            {
                 PipServer.handlingvoteresults(txpServer, ref ServerActiveQuestionList, data, filePath);
             }
         }

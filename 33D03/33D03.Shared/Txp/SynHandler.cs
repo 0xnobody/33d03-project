@@ -85,7 +85,7 @@ namespace _33D03.Shared.Txp
                 type = Shared.Txp.PacketType.SYN
             };
 
-            logger.Info($"Sending SYN with CID {convId}");
+            logger.Info($"Sending SYN with CID {convId}, {Shared.Txp.PacketType.SYN}");
 
             byte[] ackPacket = header.ToBytes();
             client.Send(ackPacket, ackPacket.Length, lastEndPoint);
@@ -96,7 +96,7 @@ namespace _33D03.Shared.Txp
             resetEvent.Set();
             synAttempts = 0;
         }
-        
+
         public void RespondToSYN(IPEndPoint endPoint)
         {
             Shared.Txp.Header header = new Shared.Txp.Header

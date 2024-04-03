@@ -4,7 +4,8 @@ using System.Linq; // Importing the namespace for Language-Integrated Query (LIN
 using System.Runtime.InteropServices; // Importing the namespace for interaction with COM objects, services, and unmanaged code.
 using System.Text; // Importing the namespace for classes representing ASCII and Unicode character encodings.
 using System.Threading.Tasks;
-using _33D03.Shared.Pip; // Importing the namespace for types that simplify working with tasks, including the ability to execute multiple tasks concurrently.
+using _33D03.Shared.Pip;
+using Microsoft.ML.Data; // Importing the namespace for types that simplify working with tasks, including the ability to execute multiple tasks concurrently.
 
 namespace _33D03.Shared.Pip
 {
@@ -60,70 +61,100 @@ namespace _33D03.Shared.Pip
 
         public byte[] SerializeListOfServerListofClients(List<ServerListofClients> clients)
         {
-            List<byte> bytesList = new List<byte>();
-            // Serialize Header
-            // bytesList.AddRange(Serialization.GetBytes(header.magic));
-            // bytesList.AddRange(Serialization.GetBytes(header.checksum));
-            bytesList.AddRange(Serialization.GetBytes((uint)header.type));
-            bytesList.AddRange(Serialization.GetBytes((uint)clients.Count));
+            // Assuming PacketInfo is the type for 'header' and it is 2 bytes
+            int headerSize = 2; // For example, if 'header' consists of a single ushort field
+            int numClients = clients.Count;
+            int perClientSize = 4 /*convoid*/ + 4 /*numFeatures*/ + 3 * 2 /*features, assuming exactly 2 features per client*/;
+            int totalSize = headerSize + 4 /*numClients size*/ + numClients * perClientSize;
+
+            byte[] completedPacketBytes = new byte[totalSize];
+
+            // Assuming ToBytes() correctly serializes the header into 2 bytes
+            Buffer.BlockCopy(header.ToBytes(), 0, completedPacketBytes, 0, headerSize);
+            Console.WriteLine(header.type);
+            Console.WriteLine(BitConverter.ToString(completedPacketBytes));
+            int currentIndex = headerSize;
+
+            // Serialize number of clients
+            Buffer.BlockCopy(BitConverter.GetBytes((uint)numClients), 0, completedPacketBytes, currentIndex, 4);
+            Console.WriteLine(numClients);
+            Console.WriteLine(BitConverter.ToString(completedPacketBytes));
+            currentIndex += 4;
+
             // Serialize each ServerListofClients struct
             foreach (var client in clients)
             {
-                // Serialize ConvoID
-                bytesList.AddRange(Serialization.GetBytes(client.convoid));
-                // Serialize NumberOfFeatures
-                bytesList.AddRange(Serialization.GetBytes(client.numFeatures));
-                // Serialize TailData (Features array)
-                foreach (var feature in client.features)
+                Buffer.BlockCopy(BitConverter.GetBytes(client.convoid), 0, completedPacketBytes, currentIndex, 4);
+                Console.WriteLine(client.convoid);
+                Console.WriteLine(BitConverter.ToString(completedPacketBytes));
+                currentIndex += 4;
+
+                Buffer.BlockCopy(BitConverter.GetBytes(client.numFeatures), 0, completedPacketBytes, currentIndex, 4);
+                Console.WriteLine(client.numFeatures);
+                Console.WriteLine(BitConverter.ToString(completedPacketBytes));
+                currentIndex += 4;
+
+                // Assuming there are at least 3 features per client
+                if (client.features.Length >= 3)
                 {
-                    bytesList.AddRange(Serialization.GetBytes((short)feature));
+                    Buffer.BlockCopy(BitConverter.GetBytes((ushort)client.features[0]), 0, completedPacketBytes, currentIndex, 2);
+                    Console.WriteLine(client.features[0]);
+                    Console.WriteLine(BitConverter.ToString(completedPacketBytes));
+                    currentIndex += 2;
+
+                    Buffer.BlockCopy(BitConverter.GetBytes((ushort)client.features[1]), 0, completedPacketBytes, currentIndex, 2);
+                    Console.WriteLine(client.features[1]);
+                    Console.WriteLine(BitConverter.ToString(completedPacketBytes));
+                    currentIndex += 2;
+
+                    Buffer.BlockCopy(BitConverter.GetBytes((ushort)client.features[2]), 0, completedPacketBytes, currentIndex, 2);
+                    Console.WriteLine(client.features[2]);
+                    Console.WriteLine(BitConverter.ToString(completedPacketBytes));
+                    currentIndex += 2;
                 }
             }
-            return bytesList.ToArray();
+
+            return completedPacketBytes;
         }
+
 
         public static (Header header, List<ServerListofClients> clients) DeserializeListOfServerListofClients(byte[] data)
         {
             int currentIndex = 0;
-            Header header = new Header
-            {
-                // magic = Serialization.ToUInt32(data, currentIndex),
-                // checksum = Serialization.ToUInt32(data, currentIndex += sizeof(uint)),
-                type = (PacketType)Serialization.ToUInt32(data, currentIndex += sizeof(uint))
-            };
-            currentIndex += sizeof(uint);
+            int headerSize = 2; // The size of the header in bytes
 
-            uint clientsCount = Serialization.ToUInt32(data, currentIndex);
-            currentIndex += sizeof(uint);
+            // Deserialize Header
+            Header header = Header.FromBytes(data.Skip(currentIndex).Take(headerSize).ToArray());
+            currentIndex += headerSize;
+
+            // Deserialize number of clients
+            uint numClients = BitConverter.ToUInt32(data, currentIndex);
+            currentIndex += 4;
 
             List<ServerListofClients> clients = new List<ServerListofClients>();
 
-            for (int i = 0; i < clientsCount; i++)
+            for (int i = 0; i < numClients; i++)
             {
-                uint convoid = Serialization.ToUInt32(data, currentIndex);
-                currentIndex += sizeof(uint);
+                // Deserialize ConvoID and NumberOfFeatures
+                uint convoid = BitConverter.ToUInt32(data, currentIndex);
+                currentIndex += 4;
 
-                int numFeatures = Serialization.ToInt32(data, currentIndex);
-                currentIndex += sizeof(int);
+                int numFeatures = BitConverter.ToInt32(data, currentIndex);
+                currentIndex += 4;
 
-                Feature[] features = new Feature[numFeatures];
-                for (int j = 0; j < numFeatures; j++)
+                // Assuming 3 features per client, based on the updated requirement
+                Feature[] features = new Feature[3];
+                for (int j = 0; j < 3; j++) // Adjusted for 3 features
                 {
-                    features[j] = (Feature)Serialization.ToUInt16(data, currentIndex);
-                    currentIndex += sizeof(short);
+                    features[j] = (Feature)BitConverter.ToUInt16(data, currentIndex);
+                    currentIndex += 2;
                 }
 
-                clients.Add(new ServerListofClients
-                {
-                    convoid = convoid,
-                    numFeatures = numFeatures,
-                    features = features
-                });
+                clients.Add(new ServerListofClients(convoid, numFeatures, features));
             }
 
             return (header, clients);
         }
-
 
 
     }
