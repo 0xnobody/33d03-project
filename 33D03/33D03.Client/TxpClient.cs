@@ -65,7 +65,7 @@ namespace _33D03.Client
                     throw new Exception("Invalid server IP address or hostname.");
                 }
 
-                serverEndPoint = new IPEndPoint(addresses[1], serverPort);
+                serverEndPoint = new IPEndPoint(addresses.FirstOrDefault(i => i.AddressFamily == AddressFamily.InterNetwork), serverPort);
             }
 
             // Initialize the packet bufferer for handling packet fragments.
