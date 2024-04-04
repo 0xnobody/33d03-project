@@ -16,6 +16,7 @@ namespace _33D03.Shared.Pip // Declaring a namespace for organizing related code
         SMTVerificationFeature = 2, // Defining an enumeration member named SMTVerificationFeature with value 0.
         OCRFeature = 3,
         PacketSegmentationFeature = 4,
+        ClientInfoNotSupported = 5,
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1, Size = 8)] // Applying an attribute to control the physical layout of the data fields in this struct when it is passed to unmanaged code.

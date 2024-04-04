@@ -163,7 +163,7 @@ namespace _33D03.Client
             if (generateSat == true)
             {
                 double result = EvaluateExpression(expression);
-                evalString.Append($"{expression} = {Math.Round(result)}");
+                evalString.Append($"{expression} == {Math.Round(result)}");
             }
             else
             {

@@ -73,9 +73,12 @@ namespace _33D03.Server
                 PipServer.HelloRecieved(txpServer, clientState, ServerclientsList, data, clientState.ConversationId);
                 UI.ClientConnected(clientState.ConversationId);
 
-                foreach (var conv in txpServer.conversations)
+                foreach (var client in ServerclientsList)
                 {
-                    PipServer.SendInfo(txpServer, conv.Value, ServerclientsList);
+                    if (!client.features.Contains(Feature.ClientInfoNotSupported))
+                    {
+                        PipServer.SendInfo(txpServer, txpServer.conversations[client.convoid], ServerclientsList);
+                    }
                 }
             }
             else if (receivedHeader.type == PacketType.Client_request_info)
@@ -86,7 +89,10 @@ namespace _33D03.Server
             }
             else if (receivedHeader.type == PacketType.Vote_Request_Vote_C2S)
             {
-                PipServer.SendInfo(txpServer, clientState, ServerclientsList, data, clientState.ConversationId);
+                if (!ServerclientsList.FirstOrDefault(c => c.convoid == clientState.ConversationId).features.Contains(Feature.ClientInfoNotSupported))
+                {
+                    PipServer.SendInfo(txpServer, clientState, ServerclientsList);
+                }
                 PipServer.PipServerBroadcastQuestion(txpServer, data, ServerActiveQuestionList, ServerclientsList, filePath);
             }
             else if (receivedHeader.type == PacketType.Vote_Request_Simple_C2S)
