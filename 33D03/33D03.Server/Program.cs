@@ -36,7 +36,7 @@ namespace _33D03.Server
                 List<ServerListofClients> ServerclientsList = new List<ServerListofClients>();
                 List<ServerVoteId> ServerActiveQuestionList = new List<ServerVoteId>();
 
-                string filePath = @"C:\PipList\server_output.txt";
+                string filePath = @"/home/james/Desktop/pip/junk/server_output.txt";
 
                 txpServer.OnPacketReceived += (clientState, data) =>
                 {

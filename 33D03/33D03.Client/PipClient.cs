@@ -350,8 +350,8 @@ namespace _33D03.Client
                 double rightResult = Convert.ToDouble(dataTable.Compute(rightSide, ""));
                 string leftResultStr = " Left Result: " + leftResult;
                 string rightResultStr = " Right Result: " + rightResult;
-                UI.PrintCenteredText(leftResultStr,120);
-                UI.PrintCenteredText(rightResultStr,120);
+                UI.PrintCenteredText(leftResultStr, 120);
+                UI.PrintCenteredText(rightResultStr, 120);
                 Console.WriteLine("-------------------------------------------------------------------------------------------------------------------");
                 // Perform the comparison
                 bool comparisonResult = operatorFound switch
@@ -505,7 +505,7 @@ namespace _33D03.Client
             Console.WriteLine("                    ||=                     votesimple - Random Eval Vote                   =||");
             Console.WriteLine("                    ||=                          Info - get info list                       =||");
             Console.WriteLine("                    ||=                       voteman - manual eval vote                    =||");
-            Console.WriteLine("                    ||=                    Flood - Simulate Spam messaging                  =||");
+            Console.WriteLine("                    ||=                                                                     =||");
             Console.WriteLine("                    ||=======================================================================||");
             Console.WriteLine("                    ---------------------------------------------------------------------------");
         }
@@ -522,7 +522,7 @@ namespace _33D03.Client
             Console.WriteLine("                    ||=                     votesimple - Random Eval Vote                   =||");
             Console.WriteLine("                    ||=                          Info - get info list                       =||");
             Console.WriteLine("                    ||=                       voteman - manual eval vote                    =||");
-            Console.WriteLine("                    ||=                    Flood - Simulate Spam messaging                  =||");
+            Console.WriteLine("                    ||=                                                                     =||");
             Console.WriteLine("                    ||=======================================================================||");
             Console.WriteLine("                    ---------------------------------------------------------------------------");
             Console.WriteLine("-------------------------------------------------------------------------------------------------------------------");

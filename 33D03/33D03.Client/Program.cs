@@ -46,7 +46,7 @@ namespace _33D03.Client
 
                     byte[] Getbytes = PipClient.GethelloBytes();
                     byte[] Getinfobytes = PipClient.GetinfoBytes();
-                    while (1 == 1)
+                    for (int i = 0; i < 50; i++)
                     {
                         client.Send(Getbytes);
                         client.Send(Getinfobytes);
@@ -162,7 +162,7 @@ namespace _33D03.Client
                 }
 
                 TxpClient client = new TxpClient("33d03-project.college", 24588);
-                string filePath = @$"C:\PipList\client{Guid.NewGuid()}_output.txt";
+                string filePath = @$"/home/james/Desktop/pip/junk/client{Guid.NewGuid()}_output.txt";
                 client.OnPacketReceived += (data) =>
                 {
                     logger.Trace($"client received data {BitConverter.ToString(data).Replace("-", "")}");
@@ -215,7 +215,8 @@ namespace _33D03.Client
             UI.SelectFunction();
 
             if (headerType == PacketType.Vote_Broadcast_Vote_S2C)
-            {   Console.WriteLine("-------------------------------------------------------------------------------------------------------------------");
+            {
+                Console.WriteLine("-------------------------------------------------------------------------------------------------------------------");
                 Console.WriteLine();
                 Console.WriteLine("                                                      Question                                                     ");
                 Console.WriteLine();
@@ -294,7 +295,7 @@ namespace _33D03.Client
         private static void OnPacketRecievedHandler(TxpClient client, byte[] data, bool ClientSmtCapabilities)
         {
             var pipHeader = Header.FromBytes(data);
-            string filePath = @$"C:\PipList\client{Guid.NewGuid()}_output.txt";
+            string filePath = @$"/home/james/Desktop/pip/junk/client{Guid.NewGuid()}_output.txt";
 
             switch (pipHeader.type)
             {
