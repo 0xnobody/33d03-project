@@ -46,7 +46,7 @@ namespace _33D03.Server
                     server.Send(voteinitbytes, server.conversations[client.convoid]);
                 }
 
-                ServerVoteId.AddVoteToList(ServerActiveQuestionList, voteGuid, question, 1, numClientsWithSMT);
+                ServerVoteId.AddVoteToList(ServerActiveQuestionList, voteGuid, question, VoteType.SMT, numClientsWithSMT);
 
                 new Thread(() =>
                 {
@@ -98,7 +98,7 @@ namespace _33D03.Server
 
                 int simplecount = clientlist.Count(c => c.features.Contains(Feature.SimpleVerificationFeature));
 
-                ServerVoteId.AddVoteToList(ServerActiveQuestionList, voteGuid, question, 1, simplecount);
+                ServerVoteId.AddVoteToList(ServerActiveQuestionList, voteGuid, question, VoteType.Simple, simplecount);
 
                 new Thread(() =>
                 {
@@ -212,7 +212,7 @@ namespace _33D03.Server
             int vote_count = vote.vote_counter;
             int sat_counter = vote.sat_counter;
             int unsat_counter = vote.unsat_counter;
-            Feature voteFeatureType = vote.votetype == 0 ? Feature.SimpleVerificationFeature : Feature.SMTVerificationFeature;
+            Feature voteFeatureType = vote.votetype == VoteType.Simple ? Feature.SimpleVerificationFeature : Feature.SMTVerificationFeature;
 
             listvote.RemoveAll(v => v.voteid == tempguid);
 
