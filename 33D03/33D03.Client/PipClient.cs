@@ -206,7 +206,6 @@ namespace _33D03.Client
 
         public static void VoteSimpleTyped(TxpClient client)
         {
-            Console.Write("Enter String:");
             string question = UI.VoteManUI();
             var questionlength = (uint)question.Length;
             var header = new Header(PacketType.Vote_Request_Simple_C2S);
@@ -289,13 +288,15 @@ namespace _33D03.Client
             Guid voteGuid = voteID;
             var result = SMTChecker(question);
             var Client_Answer_Packet = new PacketAnswerVote(header, voteGuid, result);
+            Console.WriteLine("-------------------------------------------------------------------------------------------------------------------");
+            Console.WriteLine("||                                                   This Client                                                 ||");
             if (Client_Answer_Packet.GetResponse() == VoteResponse.SAT)
             {
-                Console.WriteLine("Satisfied");
+                Console.WriteLine("||                                                    Satisfied                                                  ||");
             }
             else if (Client_Answer_Packet.GetResponse() == VoteResponse.UNSAT)
             {
-                Console.WriteLine("Unsatisfied");
+                Console.WriteLine("||                                                   Unsatisfied                                                 ||");
             }
             else Console.WriteLine("Syntax Error");
             byte[] answerinitbytes = Client_Answer_Packet.Serialize();
@@ -309,13 +310,14 @@ namespace _33D03.Client
             Guid voteGuid = voteID;
             var result = EvalChecker(question);
             var Client_Answer_Packet = new PacketAnswerVote(header, voteGuid, result);
+            Console.WriteLine("||                                                   This Client                                                 ||");
             if (Client_Answer_Packet.GetResponse() == VoteResponse.SAT)
             {
-                Console.WriteLine("Satisfied");
+                Console.WriteLine("||                                                    Satisfied                                                  ||");
             }
             else if (Client_Answer_Packet.GetResponse() == VoteResponse.UNSAT)
             {
-                Console.WriteLine("Unsatisfied");
+                Console.WriteLine("||                                                   Unsatisfied                                                 ||");
             }
             else Console.WriteLine("Syntax Error");
             byte[] answerinitbytes = Client_Answer_Packet.Serialize();
@@ -346,8 +348,11 @@ namespace _33D03.Client
                 DataTable dataTable = new DataTable();
                 double leftResult = Convert.ToDouble(dataTable.Compute(leftSide, ""));
                 double rightResult = Convert.ToDouble(dataTable.Compute(rightSide, ""));
-                Console.WriteLine(leftResult);
-                Console.WriteLine(rightResult);
+                string leftResultStr = " Left Result: " + leftResult;
+                string rightResultStr = " Right Result: " + rightResult;
+                UI.PrintCenteredText(leftResultStr,120);
+                UI.PrintCenteredText(rightResultStr,120);
+                Console.WriteLine("-------------------------------------------------------------------------------------------------------------------");
                 // Perform the comparison
                 bool comparisonResult = operatorFound switch
                 {
@@ -499,6 +504,7 @@ namespace _33D03.Client
             Console.WriteLine("                    ||=                        vote - Random SMT Vote                       =||");
             Console.WriteLine("                    ||=                     votesimple - Random Eval Vote                   =||");
             Console.WriteLine("                    ||=                          Info - get info list                       =||");
+            Console.WriteLine("                    ||=                       voteman - manual eval vote                    =||");
             Console.WriteLine("                    ||=                    Flood - Simulate Spam messaging                  =||");
             Console.WriteLine("                    ||=======================================================================||");
             Console.WriteLine("                    ---------------------------------------------------------------------------");
@@ -506,7 +512,19 @@ namespace _33D03.Client
 
         public static void PrintFeatureListUI(List<ServerListofClients> clients)
         {
-            SelectFunction();
+            Console.Clear();
+            Thread.Sleep(1);
+            Console.Clear();
+            Console.WriteLine("                    ---------------------------------------------------------------------------");
+            PrintLOGO();
+            Console.WriteLine("                    ||=======================================================================||");
+            Console.WriteLine("                    ||=                        vote - Random SMT Vote                       =||");
+            Console.WriteLine("                    ||=                     votesimple - Random Eval Vote                   =||");
+            Console.WriteLine("                    ||=                          Info - get info list                       =||");
+            Console.WriteLine("                    ||=                       voteman - manual eval vote                    =||");
+            Console.WriteLine("                    ||=                    Flood - Simulate Spam messaging                  =||");
+            Console.WriteLine("                    ||=======================================================================||");
+            Console.WriteLine("                    ---------------------------------------------------------------------------");
             Console.WriteLine("-------------------------------------------------------------------------------------------------------------------");
             Console.WriteLine("||=                                                Feature List                                                 =||");
             foreach (var client in clients)
@@ -562,6 +580,35 @@ namespace _33D03.Client
             {
                 Console.WriteLine($"Error moving cursor: {e.Message}");
             }
+        }
+
+        public static void PrintCenteredText(string text, int lineWidth)
+        {
+            string[] words = text.Split(' ');
+            string line = "";
+
+            foreach (var word in words)
+            {
+                if ((line + word).Length > lineWidth)
+                {
+                    Console.WriteLine(CenterLine(line.Trim(), lineWidth));
+                    line = word + " ";
+                }
+                else
+                {
+                    line += word + " ";
+                }
+            }
+            if (line.Length > 0)
+            {
+                Console.WriteLine(CenterLine(line.Trim(), lineWidth));
+            }
+        }
+
+        static string CenterLine(string line, int lineWidth)
+        {
+            int spacesToAdd = (lineWidth - line.Length) / 2;
+            return new string(' ', spacesToAdd) + line;
         }
     }
 }

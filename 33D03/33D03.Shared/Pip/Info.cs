@@ -71,45 +71,32 @@ namespace _33D03.Shared.Pip
 
             // Assuming ToBytes() correctly serializes the header into 2 bytes
             Buffer.BlockCopy(header.ToBytes(), 0, completedPacketBytes, 0, headerSize);
-            Console.WriteLine(header.type);
-            Console.WriteLine(BitConverter.ToString(completedPacketBytes));
+        
             int currentIndex = headerSize;
 
             // Serialize number of clients
             Buffer.BlockCopy(Serialization.GetBytes((uint)numClients), 0, completedPacketBytes, currentIndex, 4);
-            Console.WriteLine(numClients);
-            Console.WriteLine(BitConverter.ToString(completedPacketBytes));
             currentIndex += 4;
 
             // Serialize each ServerListofClients struct
             foreach (var client in clients)
             {
                 Buffer.BlockCopy(Serialization.GetBytes(client.convoid), 0, completedPacketBytes, currentIndex, 4);
-                Console.WriteLine(client.convoid);
-                Console.WriteLine(BitConverter.ToString(completedPacketBytes));
                 currentIndex += 4;
 
                 Buffer.BlockCopy(Serialization.GetBytes(client.numFeatures), 0, completedPacketBytes, currentIndex, 4);
-                Console.WriteLine(client.numFeatures);
-                Console.WriteLine(BitConverter.ToString(completedPacketBytes));
                 currentIndex += 4;
 
                 // Assuming there are at least 3 features per client
                 if (client.features.Length >= 3)
                 {
                     Buffer.BlockCopy(Serialization.GetBytes((ushort)client.features[0]), 0, completedPacketBytes, currentIndex, 2);
-                    Console.WriteLine(client.features[0]);
-                    Console.WriteLine(BitConverter.ToString(completedPacketBytes));
                     currentIndex += 2;
 
                     Buffer.BlockCopy(Serialization.GetBytes((ushort)client.features[1]), 0, completedPacketBytes, currentIndex, 2);
-                    Console.WriteLine(client.features[1]);
-                    Console.WriteLine(BitConverter.ToString(completedPacketBytes));
                     currentIndex += 2;
 
                     Buffer.BlockCopy(Serialization.GetBytes((ushort)client.features[2]), 0, completedPacketBytes, currentIndex, 2);
-                    Console.WriteLine(client.features[2]);
-                    Console.WriteLine(BitConverter.ToString(completedPacketBytes));
                     currentIndex += 2;
                 }
             }

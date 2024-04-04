@@ -19,6 +19,7 @@ namespace _33D03.Server
         internal static void PipServerBroadcastQuestion(TxpServer server, byte[] data, List<ServerVoteId> ServerActiveQuestionList, List<ServerListofClients> clientlist, string filePath)
         {
             (PacketRequestVote recievedpacktestvote, string question) = PacketRequestVote.Deserialize(data);
+            UI.BroadcastingQuestion(question);
 
             var questionlength = (uint)question.Length;
             var headertoclient = new Header(PacketType.Vote_Broadcast_Vote_S2C);
@@ -67,6 +68,7 @@ namespace _33D03.Server
         internal static void PipServerBroadcastSimpleQuestion(TxpServer server, byte[] data, List<ServerVoteId> ServerActiveQuestionList, List<ServerListofClients> clientlist, string filePath)
         {
             (PacketRequestVote recievedpacktestvote, string question) = PacketRequestVote.Deserialize(data);
+            UI.BroadcastingQuestion(question);
             var sendQuestion = question;
             var questionlength = (uint)question.Length;
             var headertoclient = new Header(PacketType.Vote_Broadcast_Simple_S2C);
@@ -117,12 +119,10 @@ namespace _33D03.Server
 
         internal static void SendInfo(TxpServer server, TxpClientConversation clientState, List<ServerListofClients> clientsList, byte[] data, uint convoid)
         {
-            Console.WriteLine("sending client list");
+            //Console.WriteLine("sending client list");
             var infohdr = new Header(PacketType.Client_Info);
             var infopack = new PacketInfo(infohdr, clientsList.Count);
             byte[] sendinfobyte = infopack.SerializeListOfServerListofClients(clientsList);
-            Console.WriteLine($"sent client info{infopack.header} {infopack.numClients}");
-            Console.WriteLine(BitConverter.ToString(sendinfobyte));
 
             logger.Debug($"Sending information about {infopack.numClients} clients");
 
@@ -163,11 +163,11 @@ namespace _33D03.Server
 
         internal static ushort OrganizeData(TxpServer server, int satcount, int unsatcount, int total)
         {
-            if (satcount > unsatcount) 
+            if (satcount > unsatcount)
                 return 1;
-            else if (satcount < unsatcount) 
+            else if (satcount < unsatcount)
                 return 0;
-            else 
+            else
                 return 2;
         }
 
@@ -188,9 +188,9 @@ namespace _33D03.Server
 
             ServerVoteId temp = listvote[j];
 
-            if (voteResponse == VoteResponse.SAT) 
+            if (voteResponse == VoteResponse.SAT)
                 temp.sat_counter++;
-            else if (voteResponse == VoteResponse.UNSAT) 
+            else if (voteResponse == VoteResponse.UNSAT)
                 temp.unsat_counter++;
             temp.vote_counter += 1;
 
@@ -224,6 +224,7 @@ namespace _33D03.Server
 
             string resultStats = $"Total votes: {vote_count}, Satcount: {sat_counter}, Unsatcount: {unsat_counter}";
             byte[] finaldata = ResultS2Cpacket.Serialize(resultStats);
+            UI.BroadcastingResults(resultStats);
             foreach (var client in clientsList.Where(c => c.features.Contains(voteFeatureType)))
             {
                 txpServer.Send(finaldata, txpServer.conversations[client.convoid]);
@@ -264,27 +265,133 @@ namespace _33D03.Server
         public static void StartupUIServer()
         {
             Console.Clear();
-            Console.WriteLine("---------------------------------------------------------------------------");
-            Console.WriteLine("||                                                                       ||");
-            Console.WriteLine("||                    ,--.                    ,--.  ,--,------,--------. ||");
-            Console.WriteLine("||    ,--.  ,--,---.,-'  '-.,---.             |  ,'.|  |  .---'--.  .--' ||");
-            Console.WriteLine("||     \\  `'  | .-. '-.  .-| .-. :            |  |' '  |  `--,   |  |    ||");
-            Console.WriteLine("||      \\    /' '-' ' |  | \\   --.    .--.    |  | `   |  `---.  |  |    ||");
-            Console.WriteLine("||       `--'  `---'  `--'  `----'    '--'    `--'  `--`------'  `--'    ||");
-            Console.WriteLine("||                                                                       ||");
+            Console.WriteLine("                    ---------------------------------------------------------------------------");
+            Console.WriteLine("                    ||                                                                       ||");
+            Console.WriteLine("                    ||                    ,--.                    ,--.  ,--,------,--------. ||");
+            Console.WriteLine("                    ||    ,--.  ,--,---.,-'  '-.,---.             |  ,'.|  |  .---'--.  .--' ||");
+            Console.WriteLine("                    ||     \\  `'  | .-. '-.  .-| .-. :            |  |' '  |  `--,   |  |    ||");
+            Console.WriteLine("                    ||      \\    /' '-' ' |  | \\   --.    .--.    |  | `   |  `---.  |  |    ||");
+            Console.WriteLine("                    ||       `--'  `---'  `--'  `----'    '--'    `--'  `--`------'  `--'    ||");
+            Console.WriteLine("                    ||                                                                       ||");
 
-            Console.WriteLine("||=======================================================================||");
-            Console.WriteLine("||=                                 33D03                               =||");
-            Console.WriteLine("||=                                Group 1                              =||");
-            Console.WriteLine("||=                    Server Initiated Successfully                    =||");
-            Console.WriteLine("||=======================================================================||");
-            Console.WriteLine("---------------------------------------------------------------------------");
+            Console.WriteLine("                    ||=======================================================================||");
+            Console.WriteLine("                    ||=                                 33D03                               =||");
+            Console.WriteLine("                    ||=                                Group 1                              =||");
+            Console.WriteLine("                    ||=                    Server Initiated Successfully                    =||");
+            Console.WriteLine("                    ||=======================================================================||");
+            Console.WriteLine("                    ---------------------------------------------------------------------------");
             Console.ReadLine();
         }
 
-        public static void PrintClientList()
+        internal static void PrintLOGO()
         {
+            Console.WriteLine("                    ||                                                                       ||");
+            Console.WriteLine("                    ||                    ,--.                    ,--.  ,--,------,--------. ||");
+            Console.WriteLine("                    ||    ,--.  ,--,---.,-'  '-.,---.             |  ,'.|  |  .---'--.  .--' ||");
+            Console.WriteLine("                    ||     \\  `'  | .-. '-.  .-| .-. :            |  |' '  |  `--,   |  |    ||");
+            Console.WriteLine("                    ||      \\    /' '-' ' |  | \\   --.    .--.    |  | `   |  `---.  |  |    ||");
+            Console.WriteLine("                    ||       `--'  `---'  `--'  `----'    '--'    `--'  `--`------'  `--'    ||");
+            Console.WriteLine("                    ||                                                                       ||");
+        }
 
+        public static void ClientConnected(uint convoid)
+        {
+            Console.Clear();
+            Console.WriteLine("                    ---------------------------------------------------------------------------");
+            PrintLOGO();
+            Console.WriteLine("                    ||=======================================================================||");
+            Console.WriteLine("                    ||=                            Client Connected                         =||");
+            Console.WriteLine("                    ||=                                   Id                                =||");
+            Console.WriteLine($"                    ||=                                    {convoid}                                =||");
+            Console.WriteLine("                    ||=======================================================================||");
+            Console.WriteLine("                    ---------------------------------------------------------------------------");
+        }
+
+        public static void PrintClientList(List<ServerListofClients> ServerclientsList)
+        {
+            Console.Clear();
+            Thread.Sleep(1);
+            Console.Clear();
+            Console.WriteLine("                    ---------------------------------------------------------------------------");
+            PrintLOGO();
+            SendInfoUI(ServerclientsList);
+            Console.WriteLine("                    ---------------------------------------------------------------------------");
+            Console.WriteLine("-------------------------------------------------------------------------------------------------------------------");
+            Console.WriteLine("||=                                                Feature List                                                 =||");
+            foreach (var client in ServerclientsList)
+            {
+                Console.WriteLine("||---------------------------------------------------------------------------------------------------------------||");
+                Console.WriteLine($"||={client.convoid,-10} {client.numFeatures,-5} {client.features[0],-30} {client.features[1],-30} {client.features[2],-30}=||");
+                Console.WriteLine("||---------------------------------------------------------------------------------------------------------------||");
+            }
+            Console.WriteLine("-------------------------------------------------------------------------------------------------------------------");
+        }
+
+
+        public static void SendInfoUI(List<ServerListofClients> ServerclientsList)
+        {
+            Console.Clear();
+            Console.WriteLine("                    ---------------------------------------------------------------------------");
+            PrintLOGO();
+            Console.WriteLine("                    ||=======================================================================||");
+            Console.WriteLine("                    ||=                           Sent Info To Client                       =||");
+            Console.WriteLine("                    ||=======================================================================||");
+            Console.WriteLine("                    ---------------------------------------------------------------------------");
+        }
+
+        public static void BroadcastingQuestion(string question)
+        {
+            Console.Clear();
+            Console.WriteLine("                    ---------------------------------------------------------------------------");
+            PrintLOGO();
+            Console.WriteLine("                    ||=======================================================================||");
+            Console.WriteLine("                    ||=                          Solving For Question                       =||");
+            Console.WriteLine("");
+            PrintCenteredText(question, 120);
+            Console.WriteLine("");
+            Console.WriteLine("                    ||=======================================================================||");
+            Console.WriteLine("                    ---------------------------------------------------------------------------");
+        }
+
+        public static void BroadcastingResults(string results)
+        {
+            Console.WriteLine("                    ||=======================================================================||");
+            Console.WriteLine("                    ||=                                 Results                             =||");
+            PrintCenteredText(results, 120);
+            Console.WriteLine("                    ||=======================================================================||");
+            Console.WriteLine("                    ---------------------------------------------------------------------------");
+        }
+
+
+
+
+        public static void PrintCenteredText(string text, int lineWidth)
+        {
+            string[] words = text.Split(' ');
+            string line = "";
+
+            foreach (var word in words)
+            {
+                if ((line + word).Length > lineWidth)
+                {
+                    Console.WriteLine(CenterLine(line.Trim(), lineWidth));
+                    line = word + " ";
+                }
+                else
+                {
+                    line += word + " ";
+                }
+            }
+            if (line.Length > 0)
+            {
+                Console.WriteLine(CenterLine(line.Trim(), lineWidth));
+            }
+        }
+
+        static string CenterLine(string line, int lineWidth)
+        {
+            int spacesToAdd = (lineWidth - line.Length) / 2;
+            return new string(' ', spacesToAdd) + line;
         }
 
 

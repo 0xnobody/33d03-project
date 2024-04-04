@@ -169,7 +169,7 @@ namespace _33D03.Client
 
                     OnPacketRecievedHandler(client, data, HasSmtVerification);
                 };
-                
+
                 client.Start();
 
                 Thread inputThread = new Thread(new ParameterizedThreadStart(ProcessInput));
@@ -209,18 +209,26 @@ namespace _33D03.Client
             (PacketBroadcastVote recievedBroadcastPacket, string question) = PacketBroadcastVote.Deserialize(data);
             PacketType headerType = recievedBroadcastPacket.HeaderInfo.type;
             Guid voteID = recievedBroadcastPacket.GetGuid();
-            Console.WriteLine("header type is " + headerType);
+            Console.Clear();
+            Thread.Sleep(1);
+            Console.Clear();
+            UI.SelectFunction();
 
             if (headerType == PacketType.Vote_Broadcast_Vote_S2C)
-            {
-                Console.WriteLine("Solving for smtlib question: " + question);
+            {   Console.WriteLine("-------------------------------------------------------------------------------------------------------------------");
+                Console.WriteLine();
+                Console.WriteLine("                                                      Question                                                     ");
+                Console.WriteLine();
+                Console.WriteLine("-------------------------------------------------------------------------------------------------------------------");
+                UI.PrintCenteredText(question, 120);
+                Thread.Sleep(1);
                 PipClient.ClientAnswerVote(client, question, voteID);
                 DateTime currentTimes = DateTime.Now;
                 string timedatas = currentTimes + " ";
                 using (StreamWriter writer = new StreamWriter(filePath, true))
                 {
                     writer.Write(timedatas + " " + question + " ");
-                    Console.WriteLine("wrote to " + filePath);
+                    //Console.WriteLine("wrote to " + filePath);
                 }
             }
         }
@@ -229,12 +237,13 @@ namespace _33D03.Client
         {
             logger.Trace($"Received Reuslt packet from server with dat: {PacketBroadcastVoteResult.FromBytes(data)}");
             (PacketBroadcastVoteResult voteResult, string resultStats) = PacketBroadcastVoteResult.Deserialize(data);
-            Console.WriteLine();
-            Console.WriteLine();
-            Console.WriteLine();
-            Console.WriteLine();
-            Console.WriteLine(resultStats);
-            Console.WriteLine();
+            Console.WriteLine("-------------------------------------------------------------------------------------------------------------------");
+            Console.WriteLine("||                                                     Results                                                   ||");
+            UI.PrintCenteredText(resultStats, 120);
+            Console.WriteLine("||                                                                                                               ||");
+            Console.WriteLine("||                                                 Voting Complete                                               ||");
+            Console.WriteLine("||                                                                                                               ||");
+            Console.WriteLine("-------------------------------------------------------------------------------------------------------------------");
             Console.WriteLine();
             Console.WriteLine();
             Console.WriteLine();
@@ -244,7 +253,7 @@ namespace _33D03.Client
             using (StreamWriter writer = new StreamWriter(filePath, true))
             {
                 writer.WriteLine(voteResult.GetResponse() + " " + voteResult.GetGuid());
-                Console.WriteLine("wrote to " + filePath);
+                //Console.WriteLine("wrote to " + filePath);
             }
         }
 
@@ -254,17 +263,29 @@ namespace _33D03.Client
             (PacketBroadcastVote recievedBroadcastPacket, string question) = PacketBroadcastVote.Deserialize(data);
             PacketType headerType = recievedBroadcastPacket.HeaderInfo.type;
             Guid voteID = recievedBroadcastPacket.GetGuid();
-            Console.WriteLine("header type is " + headerType);
+            Console.Clear();
+            Thread.Sleep(1);
+            Console.Clear();
+            UI.SelectFunction();
             if (headerType == PacketType.Vote_Broadcast_Simple_S2C)
             {
-                Console.WriteLine("Solving for smtlib question: " + question);
+                Console.WriteLine("-------------------------------------------------------------------------------------------------------------------");
+                Console.WriteLine();
+                Console.WriteLine("                                                      Question                                                     ");
+                Console.WriteLine();
+                Console.WriteLine("-------------------------------------------------------------------------------------------------------------------");
+                Console.WriteLine();
+                UI.PrintCenteredText(question, 120);
+                Console.WriteLine();
+                Console.WriteLine("-------------------------------------------------------------------------------------------------------------------");
+                Thread.Sleep(1);
                 PipClient.ClientAnswerVoteSimple(client, question, voteID);
                 DateTime currentTimes = DateTime.Now;
                 string timedatas = currentTimes + " ";
                 using (StreamWriter writer = new StreamWriter(filePath, true))
                 {
                     writer.Write(timedatas + " " + question + " ");
-                    Console.WriteLine("wrote to " + filePath);
+                    //Console.WriteLine("wrote to " + filePath);
                 }
             }
         }
