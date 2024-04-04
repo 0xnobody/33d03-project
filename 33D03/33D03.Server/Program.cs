@@ -32,7 +32,7 @@ namespace _33D03.Server
                 });
 
                 // Initialize a new TxpServer instance listening on port 1151.
-                TxpServer txpServer = new TxpServer(8080);
+                TxpServer txpServer = new TxpServer(24588);
                 List<ServerListofClients> ServerclientsList = new List<ServerListofClients>();
                 List<ServerVoteId> ServerActiveQuestionList = new List<ServerVoteId>();
 
