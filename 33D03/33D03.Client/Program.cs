@@ -295,7 +295,7 @@ namespace _33D03.Client
         private static void OnPacketRecievedHandler(TxpClient client, byte[] data, bool ClientSmtCapabilities)
         {
             var pipHeader = Header.FromBytes(data);
-            string filePath = @$"/home/james/Desktop/pip/junk/client{Guid.NewGuid()}_output.txt";
+            string filePath = @$"C:/PipList/client{Guid.NewGuid()}_output.txt";
 
             switch (pipHeader.type)
             {
