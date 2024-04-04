@@ -161,7 +161,7 @@ namespace _33D03.Client
                     }
                 }
 
-                TxpClient client = new TxpClient("127.0.0.1", 8080);
+                TxpClient client = new TxpClient("33d03-project.college", 24588);
                 string filePath = @$"C:\PipList\client{Guid.NewGuid()}_output.txt";
                 client.OnPacketReceived += (data) =>
                 {

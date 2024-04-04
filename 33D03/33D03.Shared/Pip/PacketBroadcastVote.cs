@@ -8,9 +8,15 @@ using System.Threading.Tasks; // Importing the namespace for types that simplify
 
 namespace _33D03.Shared.Pip // Declaring a namespace for organizing related code and reducing naming conflicts.
 {
+    public enum VoteType : ushort
+    {
+        Simple = 0,
+        SMT = 1
+    }
+
     public struct ServerVoteId{
         public Guid voteid;
-        public ushort votetype; //0 simple, 1 smt
+        public VoteType votetype; //0 simple, 1 smt
         public int typeclientcount;
         public string question;
         public int vote_counter;
@@ -18,7 +24,7 @@ namespace _33D03.Shared.Pip // Declaring a namespace for organizing related code
         public int unsat_counter;
         public int timeout_counter;
 
-        public ServerVoteId(Guid id, string qustn, ushort type, int clientcount){
+        public ServerVoteId(Guid id, string qustn, VoteType type, int clientcount){
             voteid = id;
             question = qustn;
             votetype = type;
@@ -29,7 +35,7 @@ namespace _33D03.Shared.Pip // Declaring a namespace for organizing related code
             timeout_counter = 0;
         }
 
-        public static void AddVoteToList(List<ServerVoteId> voteList, Guid voteid, string question, ushort votetype, int typeclientcount){
+        public static void AddVoteToList(List<ServerVoteId> voteList, Guid voteid, string question, VoteType votetype, int typeclientcount){
             voteList.Add(new ServerVoteId(voteid, question, votetype, typeclientcount));
         }
         public static void DeleteVoteFromList(){
