@@ -72,12 +72,16 @@ namespace _33D03.Server
             {
                 PipServer.HelloRecieved(txpServer, clientState, ServerclientsList, data, clientState.ConversationId);
                 UI.ClientConnected(clientState.ConversationId);
-                PipServer.SendInfo(txpServer, clientState, ServerclientsList, data, clientState.ConversationId);
+
+                foreach (var conv in txpServer.conversations)
+                {
+                    PipServer.SendInfo(txpServer, conv.Value, ServerclientsList);
+                }
             }
             else if (receivedHeader.type == PacketType.Client_request_info)
             {
                 Console.WriteLine("seinding info pakcets");
-                PipServer.SendInfo(txpServer, clientState, ServerclientsList, data, clientState.ConversationId);
+                PipServer.SendInfo(txpServer, clientState, ServerclientsList);
                 UI.PrintClientList(ServerclientsList);
             }
             else if (receivedHeader.type == PacketType.Vote_Request_Vote_C2S)
@@ -95,7 +99,7 @@ namespace _33D03.Server
             }
             else if (receivedHeader.type == PacketType.Vote_answer_Simple_C2S)
             {
-                PipServer.handlingvoteresults(txpServer, ref ServerActiveQuestionList, ServerclientsList,data, filePath);
+                PipServer.handlingvoteresults(txpServer, ref ServerActiveQuestionList, ServerclientsList, data, filePath);
             }
         }
     }
